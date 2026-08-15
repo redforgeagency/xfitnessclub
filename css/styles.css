@@ -1928,16 +1928,31 @@ textarea.form-control {
     padding: 4.5rem 0;
   }
   .hero {
-    height: auto;
-    min-height: auto;
-    padding-top: 110px;
-    padding-bottom: 3.5rem;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
+    padding-top: 76px;
+    padding-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
   .hero-grid, .about-fullscreen-grid {
     grid-template-columns: 1fr;
     gap: 2.5rem;
   }
   .hero-trainer-right-side { display: none !important; }
+  .hero-watermark-x {
+    position: absolute;
+    right: 50%;
+    top: 50%;
+    transform: translate(50%, -50%);
+    font-size: clamp(26rem, 90vw, 42rem);
+    color: rgba(229, 9, 20, 0.055);
+    line-height: 0.85;
+    z-index: 1;
+  }
   .about-showcase-frame {
     min-height: 380px;
   }
@@ -1992,31 +2007,72 @@ textarea.form-control {
     height: 36px;
   }
 
+  .hero {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
+    padding-top: calc(66px + 0.75rem);
+    padding-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .hero-grid {
+    height: auto;
+    width: 100%;
+  }
+
+  .hero-left {
+    padding: 0;
+    width: 100%;
+  }
+
+  .hero-watermark-x {
+    right: 50%;
+    top: 48%;
+    transform: translate(50%, -50%);
+    font-size: clamp(28rem, 115vw, 44rem);
+    color: rgba(229, 9, 20, 0.065);
+    line-height: 0.8;
+  }
+
+  .hero-location-tag {
+    font-size: 0.76rem;
+    margin-bottom: 0.5rem;
+  }
+
   .hero-title-main {
-    font-size: clamp(1.85rem, 7.5vw, 2.35rem);
+    font-size: clamp(1.75rem, 7.2vw, 2.25rem);
     line-height: 1.12;
-    margin-bottom: 1rem;
+    margin-bottom: 0.65rem;
   }
 
   .hero-description {
-    font-size: 0.95rem;
-    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    margin-bottom: 1rem;
   }
 
   .hero-cta-group {
     flex-direction: column;
     width: 100%;
-    gap: 0.65rem;
+    gap: 0.55rem;
+    margin-bottom: 0.25rem;
   }
 
   .hero-cta-group .btn {
     width: 100%;
+    min-height: 46px;
+    font-size: 0.84rem;
   }
 
   .hero-perks-list {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
-    padding-top: 1rem;
+    gap: 0.35rem;
+    padding-top: 0.75rem;
+    font-size: 0.82rem;
   }
 
   .about-main-title {
