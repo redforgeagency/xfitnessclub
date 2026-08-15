@@ -593,15 +593,15 @@ h6 {
   height: 9px;
 }
 
-.hero-trainer-right-side {
+.hero-trainer-desktop {
   position: absolute;
-  bottom: -1px;
+  bottom: 0;
   right: max(1vw, calc((100vw - 1240px) / 2 - 140px));
-  height: 95vh;
-  max-height: 910px;
-  min-height: 600px;
+  height: clamp(580px, 92vh, 920px);
+  max-height: 920px;
+  min-height: 580px;
   width: auto;
-  max-width: 52vw;
+  max-width: 54vw;
   object-fit: contain;
   object-position: bottom right;
   z-index: 4;
@@ -1985,19 +1985,20 @@ textarea.form-control {
 @media (max-width: 1100px) {
   .section-fullscreen {
     min-height: auto;
-    padding: 4.5rem 0;
+    padding: clamp(3.5rem, 6vh, 4.5rem) 0;
   }
 
   .hero {
-    height: 100vh;
     height: 100dvh;
     min-height: 100dvh;
     padding-top: 76px;
     padding-bottom: 1.5rem;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
   }
 
   .hero-grid,
@@ -2006,8 +2007,22 @@ textarea.form-control {
     gap: 2.5rem;
   }
 
-  .hero-trainer-right-side {
+  .hero-trainer-desktop {
     display: none !important;
+  }
+
+  .hero-trainer-mobile {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    height: clamp(400px, 60vh, 550px);
+    width: auto;
+    max-width: 52vw;
+    object-fit: contain;
+    object-position: bottom right;
+    z-index: 2;
+    pointer-events: none;
   }
 
   .hero-watermark-x {
@@ -2064,16 +2079,18 @@ textarea.form-control {
     overflow: hidden;
   }
 
+  .hero-trainer-desktop {
+    display: none !important;
+  }
+
   .hero-trainer-mobile {
     display: block;
     position: absolute;
     bottom: 0;
-    right: -4vw;
-    height: 76vh;
-    max-height: 700px;
-    min-height: 460px;
+    right: 0;
+    height: clamp(360px, 55vh, 480px);
     width: auto;
-    max-width: 120vw;
+    max-width: 55vw;
     object-fit: contain;
     object-position: bottom right;
     z-index: 1;
@@ -2098,19 +2115,19 @@ textarea.form-control {
 
 @media (max-width: 580px) {
   .container {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+    padding-left: clamp(1rem, 3.5vw, 1.25rem);
+    padding-right: clamp(1rem, 3.5vw, 1.25rem);
   }
 
   .hero>.container {
-    padding-left: 1.25rem;
+    padding-left: clamp(1rem, 3.5vw, 1.25rem);
     padding-right: 0.85rem;
     margin-left: 0;
     margin-right: auto;
   }
 
   .section-fullscreen {
-    padding: 3rem 0;
+    padding: clamp(2.5rem, 5vh, 3.5rem) 0;
   }
 
   .header-container {
@@ -2125,7 +2142,7 @@ textarea.form-control {
     height: 100dvh;
     min-height: 100dvh;
     max-height: 100dvh;
-    padding-top: calc(66px + 1.6rem);
+    padding-top: calc(66px + clamp(1rem, 2.5vh, 1.6rem));
     padding-bottom: 0.5rem;
     display: flex;
     flex-direction: column;
@@ -2159,7 +2176,11 @@ textarea.form-control {
     text-align: left;
     margin-left: 0;
     position: relative;
-    z-index: 3;
+    z-index: 4;
+  }
+
+  .hero-trainer-desktop {
+    display: none !important;
   }
 
   .hero-trainer-mobile {
@@ -2167,10 +2188,10 @@ textarea.form-control {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 100vw;
-    max-width: 100vw;
+    width: 105vw;
+    max-width: 105vw;
     height: auto;
-    max-height: 50vh;
+    max-height: clamp(290px, 48vh, 430px);
     aspect-ratio: 1200 / 896;
     object-fit: contain;
     object-position: left bottom;
