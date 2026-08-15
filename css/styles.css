@@ -2061,6 +2061,7 @@ textarea.form-control {
 
   .hero {
     background: var(--bg-primary);
+    overflow: hidden;
   }
 
   .hero-trainer-mobile {
@@ -2196,11 +2197,11 @@ textarea.form-control {
   }
 
   .hero-description {
-    font-size: 0.73rem;
-    line-height: 1.32;
+    font-size: 0.74rem;
+    line-height: 1.35;
     color: #334155;
     margin-bottom: 0.45rem;
-    max-width: 56%;
+    max-width: 85%;
     text-align: left;
     align-self: flex-start;
   }
