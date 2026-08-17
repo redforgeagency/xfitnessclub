@@ -34,6 +34,12 @@ CREATE TABLE IF NOT EXISTS public.clients (
     notes TEXT DEFAULT ''
 );
 
+-- Upgrade for existing clients table (Safe Migration)
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS visits_left INTEGER DEFAULT NULL;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS total_visits_allowed INTEGER DEFAULT NULL;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS is_in_gym BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS last_checkin TIMESTAMPTZ DEFAULT NULL;
+
 -- 2.1. CLIENT VISITS & ATTENDANCE LOG TABLE
 CREATE TABLE IF NOT EXISTS public.visits (
     id TEXT PRIMARY KEY DEFAULT ('VIS-' || substr(md5(random()::text), 1, 8)),
