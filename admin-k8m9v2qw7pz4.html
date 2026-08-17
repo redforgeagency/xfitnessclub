@@ -265,20 +265,17 @@
 
         <!-- Tabel Dedicat: Evidenta Prezenta & Check-in Clienti in Sala (Live) -->
         <div class="crm-panel" style="margin-top: 1.5rem;" id="liveAttendanceSection">
-          <div class="crm-panel-header" style="flex-wrap: wrap; gap: 1rem;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <h2 class="crm-panel-title" style="display:flex; align-items:center; gap:0.5rem;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="color:var(--crm-red);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                  Prezență & Check-in Clienți în Sală (Live)
-                </h2>
-                <span class="status-badge status-training" id="inGymCountBadge">
-                  <span class="live-dot"></span> <span id="inGymCountNum">0</span> în sală acum
-                </span>
-              </div>
-              <p class="crm-panel-desc">Înregistrează sosirea clienților, scade automat vizitele din abonament (8 / 12 vizite) și monitorizează seriile active de antrenament (Streak).</p>
+          <div class="crm-panel-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <h2 class="crm-panel-title" style="display:flex; align-items:center; gap:0.5rem; margin:0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="color:var(--crm-red);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Prezență & Check-in Clienți în Sală (Live)
+              </h2>
+              <span class="status-badge status-training" id="inGymCountBadge" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                <span class="live-dot"></span> <span id="inGymCountNum">0</span> în sală acum
+              </span>
             </div>
-            <div class="crm-actions-row">
+            <div class="crm-actions-row" style="margin:0;">
               <button class="crm-btn crm-btn-secondary crm-btn-sm" onclick="openAddExistingClientModal()" title="Adaugă un client care se antrenează deja de mult timp">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
                 Înregistrează Client cu Istoric
@@ -659,7 +656,7 @@
             </div>
 
             <div class="crm-form-group">
-              <label class="crm-form-label">Dată Expirare Abonament</label>
+              <label class="crm-form-label">Dată Expirare Abonament (Calculată automat)</label>
               <input type="date" id="newClientEndDateCustom" class="crm-form-input">
             </div>
           </div>
@@ -671,25 +668,30 @@
             </div>
 
             <div class="crm-form-group">
-              <label class="crm-form-label">Vizite Rămase Disponibile</label>
+              <label class="crm-form-label">Vizite Rămase Disponibile (Calculat)</label>
               <input type="number" id="newClientRemainingVisitsCustom" class="crm-form-input" value="8" min="0" placeholder="ex: 3">
             </div>
           </div>
 
+          <div class="crm-form-group" id="unlimitedHistoryVisitsRow" style="display:none;">
+            <label class="crm-form-label">Număr de vizite efectuate în trecut (pentru generare serie Streak)</label>
+            <input type="number" id="newClientUnlimitedVisitsCount" class="crm-form-input" value="12" min="1" max="500" placeholder="ex: 15, 60, 120...">
+          </div>
+
           <div class="crm-form-group" style="margin-top: 0.75rem;">
             <label class="crm-form-label" style="display:flex; justify-content:space-between;">
-              <span>Adaugă Datele Vizitelor Anterioare (pentru calculul seriei Streak)</span>
+              <span>Generare Jurnal Vizite & Serie Streak</span>
               <span style="font-weight:600; color:var(--crm-text-muted); text-transform:none;">Opțional</span>
             </label>
             <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
-              <input type="date" id="newClientSinglePastDate" class="crm-form-input" style="max-width: 200px;">
+              <input type="date" id="newClientSinglePastDate" class="crm-form-input" style="max-width: 190px;">
               <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="addPastDateTagFromInput()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Adaugă Dată
               </button>
-              <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="autoGenerateRecentVisitDates()" title="Generează automat 3 vizite/săptămână pentru numărul de vizite efectuate">
+              <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="autoGenerateRecentVisitDates()" title="Generează automat vizite în trecut pentru a calcula streak-ul">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                Auto-Generează Date
+                Auto-Generează Vizite & Streak
               </button>
             </div>
             <div class="past-dates-tags" id="pastDatesTagsContainer">

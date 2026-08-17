@@ -73,6 +73,25 @@ function initCRMData() {
     localStorage.setItem('xfitness_custom_categories', JSON.stringify([]));
     localStorage.setItem('xfitness_data_cleaned_v2', 'true');
   }
+
+  // Data fix for any existing client with history mismatch
+  try {
+    const clients = JSON.parse(localStorage.getItem('xfitness_clients') || '[]');
+    let modified = false;
+    clients.forEach(c => {
+      if ((c.plan || '').includes('8 Vizite') && Array.isArray(c.visits)) {
+        const pastConfirmed = c.visits.filter(v => (v.notes || '').includes('istoric') || v.date !== formatDateRO(new Date())).length;
+        if (pastConfirmed > 0 && c.visits_left > (8 - pastConfirmed)) {
+          c.visits_left = Math.max(0, 8 - pastConfirmed);
+          c.total_visits_allowed = 8;
+          modified = true;
+        }
+      }
+    });
+    if (modified) {
+      localStorage.setItem('xfitness_clients', JSON.stringify(clients));
+    }
+  } catch {}
 }
 
 async function syncFromSupabase() {
@@ -415,19 +434,15 @@ function getStreakIconSVG(tierId, size = 15) {
     return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#EA580C"><path d="M12 2c-.5 2-2 3.5-3.5 5-2 2-3.5 4.5-3.5 8 0 4.4 3.6 8 8 8s8-3.6 8-8c0-3.5-1.5-6-3.5-8-1.5-1.5-3-3-3.5-5-.3 1.5-1.2 2.7-2 3.5C11.5 4.5 12 3 12 2z"/></svg>`;
   }
   if (tierId === 'simple') {
-    // 10 vizite: Foc Simplu
     return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#F59E0B"><path d="M12 2c-.5 2-2 3.5-3.5 5-2 2-3.5 4.5-3.5 8 0 4.4 3.6 8 8 8s8-3.6 8-8c0-3.5-1.5-6-3.5-8-1.5-1.5-3-3-3.5-5-.3 1.5-1.2 2.7-2 3.5C11.5 4.5 12 3 12 2zm1 14.5c0 1.9-1.3 3.5-3 3.5s-3-1.6-3-3.5c0-1.5 1-2.8 2-3.5.5 1 1.2 1.5 2 1.5s1.5-.5 2-1.5c.6.7 1 1.8 1 3.5z"/></svg>`;
   }
   if (tierId === 'red') {
-    // 60 vizite: Foc Rosu Aprins
     return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#EF4444"><path d="M12 1c-1 3-3.5 5-5 7-2.5 2.5-4 5.5-4 9.5 0 5 4 9 9 9s9-4 9-9c0-4-1.5-7-4-9.5-1.5-2-4-4-5-7zm0 10c1.5 1.5 2.5 3 2.5 5 0 2.5-1.8 4.5-4 4.5s-4-2-4-4.5c0-2 1-3.5 2.5-5 .5 1.2 1.5 2 2.5 2s2-.8 2.5-2H12z"/></svg>`;
   }
   if (tierId === 'purple') {
-    // 120 vizite: Foc Mov Aprins
     return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#A855F7"><path d="M12 1c-1 3-3.5 5-5 7-2.5 2.5-4 5.5-4 9.5 0 5 4 9 9 9s9-4 9-9c0-4-1.5-7-4-9.5-1.5-2-4-4-5-7zm0 10c1.5 1.5 2.5 3 2.5 5 0 2.5-1.8 4.5-4 4.5s-4-2-4-4.5c0-2 1-3.5 2.5-5 .5 1.2 1.5 2 2.5 2s2-.8 2.5-2H12z"/></svg>`;
   }
   if (tierId === 'champion') {
-    // 240 vizite: Cupa de Campion
     return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#F59E0B" stroke="#B45309" stroke-width="0.5"><path d="M6 2h12v3a6 6 0 0 1-5 5.91V14h3a1 1 0 0 1 1 1v1H7v-1a1 1 0 0 1 1-1h3v-3.09A6 6 0 0 1 6 5V2zm-2 2H2v3a4 4 0 0 0 4 4v-2a2 2 0 0 1-2-2V4zm16 0h2v3a2 2 0 0 1-2 2V9a4 4 0 0 0 4-4V4h-4zm-8 14h4v2H8v-2h4z"/></svg>`;
   }
   return '';
@@ -463,6 +478,82 @@ function getDayOfWeekRO(dateStr, timestamp) {
   const d = new Date(ms);
   const days = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
   return days[d.getDay()];
+}
+
+// =============================================================================
+// AUTOMATIC EXPIRY DATE CALCULATION
+// =============================================================================
+
+function calculateExpiryDateISO(startDateISO, plan) {
+  if (!startDateISO) return '';
+  const parts = startDateISO.split('-');
+  if (parts.length !== 3) return '';
+
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+
+  const d = new Date(year, month, day);
+  if (isNaN(d.getTime())) return '';
+
+  if (plan.includes('12 Luni')) {
+    d.setFullYear(d.getFullYear() + 1);
+  } else if (plan.includes('6 Luni')) {
+    d.setMonth(d.getMonth() + 6);
+  } else if (plan.includes('3 Luni')) {
+    d.setMonth(d.getMonth() + 3);
+  } else {
+    // 1 Lună, 8 Vizite, 12 Vizite, 1 Vizită, Antrenament Individual -> +1 Lună
+    d.setMonth(d.getMonth() + 1);
+  }
+
+  const resYear = d.getFullYear();
+  const resMonth = String(d.getMonth() + 1).padStart(2, '0');
+  const resDay = String(d.getDate()).padStart(2, '0');
+
+  return `${resYear}-${resMonth}-${resDay}`;
+}
+
+function updateAutoExpiryDate() {
+  const startInput = document.getElementById('newClientStartDateCustom');
+  const endInput = document.getElementById('newClientEndDateCustom');
+  const planSelect = document.getElementById('newClientPlan');
+
+  if (!startInput || !endInput || !planSelect) return;
+
+  if (!startInput.value) {
+    startInput.value = new Date().toISOString().slice(0, 10);
+  }
+
+  const expiry = calculateExpiryDateISO(startInput.value, planSelect.value);
+  if (expiry) {
+    endInput.value = expiry;
+  }
+}
+
+function updateVisitsBalanceInputs() {
+  const plan = document.getElementById('newClientPlan')?.value || '';
+  const isLimited = plan.includes('Vizit');
+  const visitsRow = document.getElementById('existingVisitsBalanceRow');
+  const unlimitedRow = document.getElementById('unlimitedHistoryVisitsRow');
+
+  if (isLimited) {
+    if (visitsRow) visitsRow.style.display = 'grid';
+    if (unlimitedRow) unlimitedRow.style.display = 'none';
+
+    const total = plan.includes('8 Vizite') ? 8 : (plan.includes('12 Vizite') ? 12 : 1);
+    const completedInput = document.getElementById('newClientCompletedVisitsCount');
+    const remainingInput = document.getElementById('newClientRemainingVisitsCustom');
+
+    let completed = parseInt(completedInput?.value, 10);
+    if (isNaN(completed) || completed < 0) completed = 0;
+
+    const remaining = Math.max(0, total - completed);
+    if (remainingInput) remainingInput.value = remaining;
+  } else {
+    if (visitsRow) visitsRow.style.display = 'none';
+    if (unlimitedRow) unlimitedRow.style.display = 'block';
+  }
 }
 
 // =============================================================================
@@ -688,19 +779,19 @@ function renderLiveAttendanceTable() {
     // Streak badge
     const streakHTML = getStreakBadgeHTML(streakInfo);
 
-    // Action button: Check-in or Check-out
+    // Action button: Check-in or Check-out (both equal size to History)
     let toggleBtnHTML = '';
     if (c.is_in_gym) {
       toggleBtnHTML = `
         <button class="table-action-btn btn-checkout" onclick="handleClientCheckOut('${c.id}')" title="Încheie antrenamentul (Plecat)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
           Check-out
         </button>
       `;
     } else {
       toggleBtnHTML = `
         <button class="table-action-btn btn-checkin" onclick="handleClientCheckIn('${c.id}')" title="Înregistrează intrarea la sală">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
           Check-in
         </button>
       `;
@@ -718,7 +809,7 @@ function renderLiveAttendanceTable() {
         <td>${streakHTML}</td>
         <td><span style="font-size:0.8rem; font-weight:600; color:var(--crm-text-main);">${streakInfo.lastVisitFormatted}</span></td>
         <td>
-          <div style="display:flex; gap:0.4rem; align-items:center;">
+          <div style="display:flex; gap:0.5rem; align-items:center;">
             ${toggleBtnHTML}
             <button class="table-action-btn btn-history" onclick="openClientHistoryModal('${c.id}')" title="Deschide Profil & Istoric Vizite">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
@@ -794,12 +885,12 @@ function renderClientsTable() {
         <td><span style="font-size:0.8rem; color:var(--crm-text-muted);">${c.startDate} — ${c.expiresDate}</span></td>
         <td><span class="status-badge ${statusClass}">${c.status}</span></td>
         <td>
-          <div style="display:flex; gap:0.35rem;">
+          <div style="display:flex; gap:0.4rem;">
             <button class="table-action-btn btn-history" onclick="openClientHistoryModal('${c.id}')" title="Istoric & Profil">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
               Istoric
             </button>
-            <button class="table-action-btn btn-delete" onclick="deleteClient('${c.id}')" title="Șterge Client">
+            <button class="table-action-btn btn-delete btn-icon-only" onclick="deleteClient('${c.id}')" title="Șterge Client">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           </div>
@@ -822,12 +913,10 @@ window.handleClientCheckIn = async function(clientId) {
   const now = new Date();
   const todayStr = formatDateRO(now);
 
-  // Check if client already had a visit registered today
   if (!Array.isArray(client.visits)) client.visits = [];
   const alreadyVisitedToday = client.visits.some(v => v.date === todayStr);
 
   if (!alreadyVisitedToday) {
-    // First visit of the day: check limits and decrement
     if (isLimited) {
       if (client.visits_left !== undefined && client.visits_left <= 0) {
         const confirmExtra = confirm(`Atenție: Clientul ${client.name} nu mai are vizite disponibile pe abonamentul actual (0 rămase)!\n\nDoriți totuși să înregistrați intrarea la sală?`);
@@ -864,7 +953,6 @@ window.handleClientCheckIn = async function(clientId) {
       });
     }
   } else {
-    // Client already visited today: only activate in-gym status without duplicate decrement
     const todayVisit = client.visits.find(v => v.date === todayStr);
     if (todayVisit && !todayVisit.time) {
       todayVisit.time = formatTimeRO(now);
@@ -1026,7 +1114,7 @@ function renderClientHistoryModal() {
             <td><span style="font-size:0.8rem; color:var(--crm-red); font-weight:700;">${escapeHTML(v.plan || client.plan)}</span></td>
             <td><span style="font-size:0.75rem; color:var(--crm-text-muted);">${escapeHTML(v.notes || 'Check-in')}</span></td>
             <td>
-              <button class="table-action-btn btn-delete" onclick="handleDeleteVisit('${v.id}')" title="Șterge vizită">
+              <button class="table-action-btn btn-delete btn-icon-only" onclick="handleDeleteVisit('${v.id}')" title="Șterge vizită">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               </button>
             </td>
@@ -1218,22 +1306,13 @@ window.setClientModalMode = function(mode) {
     if (historySec) historySec.style.display = 'block';
     if (title) title.textContent = 'Înregistrează Client Existent (Cu Istoric)';
 
-    const today = new Date();
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(today.getMonth() - 1);
-    const oneMonthLater = new Date();
-    oneMonthLater.setMonth(today.getMonth() + 1);
-
     const startInput = document.getElementById('newClientStartDateCustom');
-    const endInput = document.getElementById('newClientEndDateCustom');
-    if (startInput && !startInput.value) startInput.value = oneMonthAgo.toISOString().slice(0, 10);
-    if (endInput && !endInput.value) endInput.value = oneMonthLater.toISOString().slice(0, 10);
-
-    const planVal = document.getElementById('newClientPlan')?.value || '';
-    const visitsBalanceRow = document.getElementById('existingVisitsBalanceRow');
-    if (visitsBalanceRow) {
-      visitsBalanceRow.style.display = planVal.includes('Vizit') ? 'grid' : 'none';
+    if (startInput && !startInput.value) {
+      startInput.value = new Date().toISOString().slice(0, 10);
     }
+
+    updateAutoExpiryDate();
+    updateVisitsBalanceInputs();
   } else {
     if (btnExisting) {
       btnExisting.classList.remove('active');
@@ -1260,14 +1339,26 @@ window.addPastDateTagFromInput = function() {
 
   if (!tempPastDates.includes(dateStr)) {
     tempPastDates.push(dateStr);
+    tempPastDates.sort((a, b) => parseDateToMS(a) - parseDateToMS(b));
     renderPastDateTags();
     dateInput.value = '';
+
+    const completedInput = document.getElementById('newClientCompletedVisitsCount');
+    if (completedInput) {
+      completedInput.value = tempPastDates.length;
+      updateVisitsBalanceInputs();
+    }
   }
 };
 
 window.removePastDateTag = function(idx) {
   tempPastDates.splice(idx, 1);
   renderPastDateTags();
+  const completedInput = document.getElementById('newClientCompletedVisitsCount');
+  if (completedInput) {
+    completedInput.value = tempPastDates.length;
+    updateVisitsBalanceInputs();
+  }
 };
 
 function renderPastDateTags() {
@@ -1288,25 +1379,54 @@ function renderPastDateTags() {
 }
 
 window.autoGenerateRecentVisitDates = function() {
-  const countInput = document.getElementById('newClientCompletedVisitsCount');
-  let count = parseInt(countInput?.value, 10);
-  if (isNaN(count) || count <= 0) count = 6;
+  const plan = document.getElementById('newClientPlan')?.value || '';
+  const isLimited = plan.includes('Vizit');
+
+  let count = 12;
+  if (isLimited) {
+    const completedInput = document.getElementById('newClientCompletedVisitsCount');
+    count = parseInt(completedInput?.value, 10);
+    if (isNaN(count) || count <= 0) count = plan.includes('8') ? 5 : 8;
+  } else {
+    const unlimitedCountInput = document.getElementById('newClientUnlimitedVisitsCount');
+    count = parseInt(unlimitedCountInput?.value, 10);
+    if (isNaN(count) || count <= 0) count = 15;
+  }
 
   tempPastDates = [];
   const now = new Date();
 
-  // Generate 3 visits per week backwards (e.g. Mon, Wed, Fri)
+  // Generate 3 visits per week backwards (Mon=1, Wed=3, Fri=5)
   let daysBack = 1;
-  while (tempPastDates.length < count && daysBack < 120) {
+  while (tempPastDates.length < count && daysBack < 365) {
     const d = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-    const dayOfWeek = d.getDay(); // 1=Mon, 3=Wed, 5=Fri
+    const dayOfWeek = d.getDay();
     if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) {
       tempPastDates.push(formatDateRO(d));
     }
     daysBack++;
   }
 
+  if (tempPastDates.length < count) {
+    let extra = 1;
+    while (tempPastDates.length < count && extra < 365) {
+      const d = new Date(now.getTime() - extra * 24 * 60 * 60 * 1000);
+      const str = formatDateRO(d);
+      if (!tempPastDates.includes(str)) {
+        tempPastDates.push(str);
+      }
+      extra++;
+    }
+  }
+
+  tempPastDates.sort((a, b) => parseDateToMS(a) - parseDateToMS(b));
   renderPastDateTags();
+
+  if (isLimited) {
+    const completedInput = document.getElementById('newClientCompletedVisitsCount');
+    if (completedInput) completedInput.value = tempPastDates.length;
+    updateVisitsBalanceInputs();
+  }
 };
 
 // =============================================================================
@@ -1429,9 +1549,12 @@ function initEventListeners() {
         }
 
         if (isLimited) {
+          const completedCount = parseInt(document.getElementById('newClientCompletedVisitsCount')?.value, 10) || tempPastDates.length || 0;
           const remInput = parseInt(document.getElementById('newClientRemainingVisitsCustom')?.value, 10);
           if (!isNaN(remInput)) {
             visitsLeft = remInput;
+          } else {
+            visitsLeft = Math.max(0, totalAllowed - completedCount);
           }
         }
 
@@ -1517,9 +1640,12 @@ function initEventListeners() {
     });
   }
 
-  // Plan select dynamic prices & toggle visits row
+  // Plan select dynamic prices & toggle visits row + auto expiry calculation
   const planSelect = document.getElementById('newClientPlan');
   const priceInput = document.getElementById('newClientPrice');
+  const startDateInput = document.getElementById('newClientStartDateCustom');
+  const completedVisitsInput = document.getElementById('newClientCompletedVisitsCount');
+
   if (planSelect && priceInput) {
     planSelect.addEventListener('change', () => {
       const prices = getPricingConfig();
@@ -1533,11 +1659,19 @@ function initEventListeners() {
       else if (p === 'Nelimitat 12 Luni') priceInput.value = prices.unlimited12;
       else if (p === 'Antrenament Individual') priceInput.value = prices.pt1 * 8;
 
-      const visitsBalanceRow = document.getElementById('existingVisitsBalanceRow');
-      if (visitsBalanceRow) {
-        visitsBalanceRow.style.display = p.includes('Vizit') ? 'grid' : 'none';
-      }
+      updateVisitsBalanceInputs();
+      updateAutoExpiryDate();
     });
+  }
+
+  if (startDateInput) {
+    startDateInput.addEventListener('change', updateAutoExpiryDate);
+    startDateInput.addEventListener('input', updateAutoExpiryDate);
+  }
+
+  if (completedVisitsInput) {
+    completedVisitsInput.addEventListener('input', updateVisitsBalanceInputs);
+    completedVisitsInput.addEventListener('change', updateVisitsBalanceInputs);
   }
 
   // Search & Filter listeners
@@ -1567,7 +1701,7 @@ function initEventListeners() {
     exportBtn.addEventListener('click', () => {
       const backupData = {
         exportDate: new Date().toISOString(),
-        version: '2.6',
+        version: '2.7',
         leads: getLeads(),
         clients: getClients(),
         expenses: getExpenses(),
@@ -1666,7 +1800,7 @@ function renderLeadsTable() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
               Client
             </button>
-            <button class="table-action-btn btn-delete" onclick="deleteLead('${l.id}')" title="Șterge Cerere">
+            <button class="table-action-btn btn-delete btn-icon-only" onclick="deleteLead('${l.id}')" title="Șterge Cerere">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           </div>
@@ -1775,9 +1909,8 @@ function renderExpensesTable() {
         <td><strong style="color:var(--crm-red); font-size:0.95rem;">${Number(e.amount).toLocaleString('ro-RO')} Lei</strong></td>
         <td><span style="font-size:0.8rem; color:var(--crm-text-muted);">${e.date}</span></td>
         <td>
-          <button class="table-action-btn btn-delete" onclick="deleteExpense('${e.id}')" title="Șterge Cheltuială">
+          <button class="table-action-btn btn-delete btn-icon-only" onclick="deleteExpense('${e.id}')" title="Șterge Cheltuială">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            Șterge
           </button>
         </td>
       </tr>

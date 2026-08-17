@@ -699,21 +699,33 @@ body {
 .table-action-btn {
   background: transparent;
   border: 1px solid var(--crm-border);
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
+  height: 34px;
+  min-width: 98px;
+  padding: 0 0.85rem;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  gap: 0.4rem;
   color: var(--crm-text-main);
   transition: all 0.15s ease;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .table-action-btn:hover {
   background: #F1F5F9;
   border-color: var(--crm-text-muted);
+}
+
+.table-action-btn.btn-icon-only {
+  min-width: 34px;
+  width: 34px;
+  padding: 0;
 }
 
 .table-action-btn.btn-call {
@@ -728,6 +740,9 @@ body {
 .table-action-btn.btn-delete {
   color: var(--crm-red);
   border-color: var(--crm-red-border);
+  min-width: 34px;
+  width: 34px;
+  padding: 0;
 }
 
 .table-action-btn.btn-delete:hover {
@@ -917,14 +932,45 @@ body {
   background: var(--crm-red);
 }
 
-/* Large Modal Style for History & Extended Client Form (Widescreen 16:9 Feel) */
-.crm-modal-card-lg {
-  max-width: 1140px;
-  width: 94vw;
-  max-height: 90vh;
-  padding: 2.25rem 2.5rem;
-  overflow-y: auto;
+.crm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 13, 16, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.crm-modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.crm-modal-card {
+  background: #FFFFFF;
   border-radius: 16px;
+  max-width: 650px;
+  width: 90vw;
+  padding: 2.25rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  position: relative;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Widescreen Large Modal (Spacious 16:9 across viewport) */
+.crm-modal-card.crm-modal-card-lg,
+.crm-modal-card-lg {
+  max-width: 1280px !important;
+  width: 95vw !important;
+  padding: 2.25rem 2.75rem !important;
 }
 
 .history-client-header {
@@ -946,7 +992,7 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  width: 160px;
+  width: 180px;
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(229, 9, 20, 0.25));
   pointer-events: none;
@@ -1110,38 +1156,6 @@ body {
   font-weight: 900;
   font-size: 0.9rem;
   line-height: 1;
-}
-
-.crm-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(11, 13, 16, 0.7);
-  backdrop-filter: blur(5px);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.crm-modal-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.crm-modal-card {
-  background: #FFFFFF;
-  border-radius: 16px;
-  max-width: 650px;
-  width: 90vw;
-  padding: 2.25rem;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
-  position: relative;
-  max-height: 90vh;
-  overflow-y: auto;
 }
 
 .crm-modal-header {
