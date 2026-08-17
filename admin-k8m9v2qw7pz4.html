@@ -262,6 +262,70 @@
             </div>
           </div>
         </div>
+
+        <!-- Tabel Dedicat: Evidenta Prezenta & Check-in Clienti in Sala (Live) -->
+        <div class="crm-panel" style="margin-top: 1.5rem;" id="liveAttendanceSection">
+          <div class="crm-panel-header" style="flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <h2 class="crm-panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="color:var(--crm-red);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  Prezență & Check-in Clienți în Sală (Live)
+                </h2>
+                <span class="status-badge status-training" id="inGymCountBadge">
+                  <span class="live-dot"></span> <span id="inGymCountNum">0</span> în sală acum
+                </span>
+              </div>
+              <p class="crm-panel-desc">Înregistrează sosirea clienților, scade automat vizitele din abonament (8 / 12 vizite) și monitorizează seriile active de antrenament (Streak).</p>
+            </div>
+            <div class="crm-actions-row">
+              <button class="crm-btn crm-btn-secondary crm-btn-sm" onclick="openAddExistingClientModal()" title="Adaugă un client care se antrenează deja de mult timp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                Înregistrează Client cu Istoric
+              </button>
+              <button class="crm-btn crm-btn-primary crm-btn-sm" onclick="openModal('addClientModal')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                Adaugă Client Nou
+              </button>
+            </div>
+          </div>
+
+          <div class="crm-table-controls" style="padding: 0 0 1rem 0; border-bottom: 1px solid var(--crm-border); margin-bottom: 1rem;">
+            <div class="crm-search-box">
+              <svg class="crm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="attendanceSearchInput" placeholder="Caută rapid după nume sau telefon...">
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <select class="crm-filter-select" id="attendanceStatusFilter">
+                <option value="ALL">Toți Clienții Înregistrați</option>
+                <option value="IN_GYM">Doar Cei Prezenți în Sală (Acum)</option>
+                <option value="OUT_GYM">În Afara Sălii</option>
+                <option value="STREAK">Doar Clienți cu Streak Activ (&gt;0)</option>
+                <option value="VISITS_PASS">Doar Abonamente cu Număr de Vizite</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Abonament & Tip</th>
+                  <th>Status Sală</th>
+                  <th>Bilanț Vizite</th>
+                  <th>Serie Activă (Streak)</th>
+                  <th>Ultima Vizită</th>
+                  <th>Acțiuni Rapide</th>
+                </tr>
+              </thead>
+              <tbody id="liveAttendanceTableBody">
+                <!-- Generat dinamic prin js/crm.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section class="crm-view" id="viewLeads">
@@ -281,9 +345,9 @@
 
             <select class="crm-filter-select" id="leadStatusFilter">
               <option value="ALL">Toate Statusurile</option>
-              <option value="Nou">🔴 Cereri Noi</option>
-              <option value="Contactat">🟡 Contactat</option>
-              <option value="Confirmat">🟢 Confirmat</option>
+              <option value="Nou">Cereri Noi</option>
+              <option value="Contactat">Contactat</option>
+              <option value="Confirmat">Confirmat</option>
             </select>
           </div>
 
@@ -309,12 +373,18 @@
         <div class="crm-view-header">
           <div>
             <h1 class="crm-view-title">Clienți & Abonamente</h1>
-            <p class="crm-view-desc">Evidența membrilor înregistrați, tipul abonamentului și valabilitatea acestuia.</p>
+            <p class="crm-view-desc">Evidența membrilor înregistrați, tipul abonamentului, vizitele rămase și seriile de prezență (Streak).</p>
           </div>
-          <button class="crm-btn crm-btn-primary" onclick="openModal('addClientModal')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-            Adaugă Client Nou
-          </button>
+          <div class="crm-actions-row">
+            <button class="crm-btn crm-btn-secondary" onclick="openAddExistingClientModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
+              Client cu Istoric Existent
+            </button>
+            <button class="crm-btn crm-btn-primary" onclick="openModal('addClientModal')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+              Adaugă Client Nou
+            </button>
+          </div>
         </div>
 
         <div class="crm-table-wrapper">
@@ -326,27 +396,32 @@
 
             <select class="crm-filter-select" id="clientStatusFilter">
               <option value="ALL">Toți Clienții</option>
-              <option value="Activ">🟢 Doar Activi</option>
-              <option value="Expirat">⚪ Expirate</option>
+              <option value="Activ">Doar Activi</option>
+              <option value="Expirat">Expirate / Epuizate</option>
+              <option value="IN_GYM">În Sală Acum</option>
             </select>
           </div>
 
-          <table class="crm-table">
-            <thead>
-              <tr>
-                <th>Nume Prenume</th>
-                <th>Telefon</th>
-                <th>Abonament</th>
-                <th>Preț (MDL)</th>
-                <th>Perioadă Valabilitate</th>
-                <th>Status</th>
-                <th>Acțiune</th>
-              </tr>
-            </thead>
-            <tbody id="allClientsTableBody">
-              
-            </tbody>
-          </table>
+          <div style="overflow-x:auto;">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th>Nume Prenume</th>
+                  <th>Telefon</th>
+                  <th>Abonament</th>
+                  <th>Status Sală</th>
+                  <th>Bilanț Vizite</th>
+                  <th>Streak</th>
+                  <th>Valabilitate</th>
+                  <th>Status</th>
+                  <th>Acțiuni</th>
+                </tr>
+              </thead>
+              <tbody id="allClientsTableBody">
+                
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -515,26 +590,42 @@
   </div>
 
   <div class="crm-modal-backdrop" id="addClientModal">
-    <div class="crm-modal-card">
+    <div class="crm-modal-card crm-modal-card-lg">
       <div class="crm-modal-header">
-        <h3 class="crm-modal-title">Înregistrează Client / Abonament</h3>
-        <p class="crm-modal-desc">Adaugă un membru nou și suma achitată.</p>
+        <h3 class="crm-modal-title" id="addClientModalTitle">Înregistrează Client / Abonament</h3>
+        <p class="crm-modal-desc">Adaugă un membru nou sau configurează istoricul unui client care frecventează deja sala.</p>
+      </div>
+
+      <!-- Segmented Mode Control -->
+      <div class="segmented-mode-control">
+        <button type="button" class="segmented-mode-btn active" id="btnModeNewClient" onclick="setClientModalMode('new')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Client Nou (Abonament Nou)
+        </button>
+        <button type="button" class="segmented-mode-btn" id="btnModeExistingClient" onclick="setClientModalMode('history')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
+          Client Existent (Cu Istoric Anterior)
+        </button>
       </div>
 
       <form id="newClientForm">
-        <div class="crm-form-group">
-          <label class="crm-form-label">Nume și Prenume *</label>
-          <input type="text" id="newClientName" class="crm-form-input" placeholder="ex: Andrei Popescu" required>
-        </div>
+        <input type="hidden" id="clientRegistrationMode" value="new">
 
-        <div class="crm-form-group">
-          <label class="crm-form-label">Număr de Telefon *</label>
-          <input type="tel" id="newClientPhone" class="crm-form-input" placeholder="ex: 069 000 000" required>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label class="crm-form-label">Nume și Prenume *</label>
+            <input type="text" id="newClientName" class="crm-form-input" placeholder="ex: Andrei Popescu" required>
+          </div>
+
+          <div class="crm-form-group">
+            <label class="crm-form-label">Număr de Telefon *</label>
+            <input type="tel" id="newClientPhone" class="crm-form-input" placeholder="ex: 069 000 000" required>
+          </div>
         </div>
 
         <div class="crm-form-row">
           <div class="crm-form-group">
-            <label class="crm-form-label">Abonament *</label>
+            <label class="crm-form-label">Tip Abonament *</label>
             <select id="newClientPlan" class="crm-form-select">
               <option value="1 Vizită">1 Vizită (100 Lei)</option>
               <option value="8 Vizite">8 Vizite (400 Lei)</option>
@@ -546,17 +637,265 @@
               <option value="Antrenament Individual">Antrenament Individual (1600 Lei)</option>
             </select>
           </div>
+
           <div class="crm-form-group">
             <label class="crm-form-label">Preț Încasat (Lei) *</label>
             <input type="number" id="newClientPrice" class="crm-form-input" value="600" min="0" required>
+            <span style="font-size:0.72rem; color:var(--crm-text-muted);">Introdu 0 dacă a fost deja achitat anterior.</span>
+          </div>
+        </div>
+
+        <!-- Section specific to Existing Clients / History -->
+        <div id="existingClientHistorySection" style="display: none; background: #F8FAFC; border: 1px solid var(--crm-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <h4 style="font-family:var(--font-heading); font-size:0.9rem; font-weight:900; text-transform:uppercase; color:var(--crm-red); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
+            Configurare Istoric & Perioadă Valabilitate
+          </h4>
+
+          <div class="crm-form-row">
+            <div class="crm-form-group">
+              <label class="crm-form-label">Dată Început Abonament</label>
+              <input type="date" id="newClientStartDateCustom" class="crm-form-input">
+            </div>
+
+            <div class="crm-form-group">
+              <label class="crm-form-label">Dată Expirare Abonament</label>
+              <input type="date" id="newClientEndDateCustom" class="crm-form-input">
+            </div>
+          </div>
+
+          <div class="crm-form-row" id="existingVisitsBalanceRow">
+            <div class="crm-form-group">
+              <label class="crm-form-label">Vizite Deja Efectuate în Trecut</label>
+              <input type="number" id="newClientCompletedVisitsCount" class="crm-form-input" value="0" min="0" placeholder="ex: 5">
+            </div>
+
+            <div class="crm-form-group">
+              <label class="crm-form-label">Vizite Rămase Disponibile</label>
+              <input type="number" id="newClientRemainingVisitsCustom" class="crm-form-input" value="8" min="0" placeholder="ex: 3">
+            </div>
+          </div>
+
+          <div class="crm-form-group" style="margin-top: 0.75rem;">
+            <label class="crm-form-label" style="display:flex; justify-content:space-between;">
+              <span>Adaugă Datele Vizitelor Anterioare (pentru calculul seriei Streak)</span>
+              <span style="font-weight:600; color:var(--crm-text-muted); text-transform:none;">Opțional</span>
+            </label>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+              <input type="date" id="newClientSinglePastDate" class="crm-form-input" style="max-width: 200px;">
+              <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="addPastDateTagFromInput()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Adaugă Dată
+              </button>
+              <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="autoGenerateRecentVisitDates()" title="Generează automat 3 vizite/săptămână pentru numărul de vizite efectuate">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                Auto-Generează Date
+              </button>
+            </div>
+            <div class="past-dates-tags" id="pastDatesTagsContainer">
+              <!-- Past date chips will appear here -->
+            </div>
           </div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
           <button type="button" class="crm-btn crm-btn-secondary" data-close-crm-modal>Anulează</button>
-          <button type="submit" class="crm-btn crm-btn-primary">Salvează Client</button>
+          <button type="submit" class="crm-btn crm-btn-primary" id="saveClientSubmitBtn">Salvează Client</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Detalii Client & Istoric Vizite / Streak -->
+  <div class="crm-modal-backdrop" id="clientHistoryModal">
+    <div class="crm-modal-card crm-modal-card-lg">
+      <div class="crm-modal-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <h3 class="crm-modal-title" id="histModalClientName">Profil Client</h3>
+          <p class="crm-modal-desc" id="histModalClientPhone">069 000 000</p>
+        </div>
+        <button type="button" class="table-action-btn" data-close-crm-modal style="font-size:1.1rem; padding:0.4rem 0.85rem;">✕</button>
+      </div>
+
+      <div class="history-client-header">
+        <div>
+          <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--crm-text-dim);">Abonament Curent</span>
+          <h3 style="font-family:var(--font-heading); font-size:1.35rem; font-weight:900; margin-top:2px;" id="histModalClientPlan">Nelimitat 1 Lună</h3>
+          <div style="font-size:0.82rem; color:#CBD5E1; margin-top:4px;" id="histModalClientValidity">
+            Valabilitate: 01.08.2026 — 31.08.2026
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div id="histModalLiveStatus">
+            <span class="status-badge status-training"><span class="live-dot"></span> Se antrenează</span>
+          </div>
+          <div style="margin-top:0.75rem;" id="histModalQuickToggleAction">
+            <!-- Buton Check-in / Check-out direct din modal -->
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI-uri client -->
+      <div class="history-stats-grid">
+        <div class="history-stat-box">
+          <div class="history-stat-label">Serie Activă (Streak)</div>
+          <div class="history-stat-val" id="histModalStreakVal">0</div>
+          <div style="font-size:0.74rem; color:var(--crm-text-muted); margin-top:4px;" id="histModalStreakSub">
+            Resetare la &gt;14 zile pauză
+          </div>
+        </div>
+
+        <div class="history-stat-box">
+          <div class="history-stat-label">Vizite Rămase / Total</div>
+          <div class="history-stat-val" id="histModalVisitsVal">Nelimitat</div>
+          <div style="font-size:0.74rem; color:var(--crm-text-muted); margin-top:4px;" id="histModalVisitsSub">
+            0 vizite efectuate
+          </div>
+        </div>
+
+        <div class="history-stat-box">
+          <div class="history-stat-label">Total Vizite Înregistrate</div>
+          <div class="history-stat-val" id="histModalTotalVisitsVal">0</div>
+          <div style="font-size:0.74rem; color:var(--crm-text-muted); margin-top:4px;" id="histModalLastVisitSub">
+            Fără vizite
+          </div>
+        </div>
+      </div>
+
+      <!-- Istoric & Actiuni -->
+      <div class="history-tabs-nav">
+        <button type="button" class="history-tab-btn active" onclick="showHistoryTab('tabVisitsList')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+          Jurnal Vizite & Prezență
+        </button>
+        <button type="button" class="history-tab-btn" onclick="showHistoryTab('tabAddManualVisit')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Adaugă Vizită din Trecut
+        </button>
+        <button type="button" class="history-tab-btn" onclick="showHistoryTab('tabEditPlan')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Ajustează Abonament / Vizite
+        </button>
+      </div>
+
+      <!-- Tab 1: Lista Vizitelor -->
+      <div id="tabVisitsList">
+        <div style="max-height: 280px; overflow-y: auto; border: 1px solid var(--crm-border); border-radius: 10px;">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dată Vizită</th>
+                <th>Ziua</th>
+                <th>Ora Sosirii</th>
+                <th>Tip Abonament</th>
+                <th>Note / Detalii</th>
+                <th>Acțiune</th>
+              </tr>
+            </thead>
+            <tbody id="histModalVisitsTableBody">
+              <!-- Populat prin JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Adaugă Vizită Manuală -->
+      <div id="tabAddManualVisit" style="display:none;">
+        <div class="history-add-visit-box">
+          <h4 style="font-size:0.88rem; font-weight:800; text-transform:uppercase; margin-bottom:0.85rem; color:var(--crm-text-main);">
+            Înregistrează o vizită efectuată anterior
+          </h4>
+          <form id="manualVisitForm" onsubmit="handleManualVisitSubmit(event)">
+            <div class="crm-form-row">
+              <div class="crm-form-group">
+                <label class="crm-form-label">Dată Vizită *</label>
+                <input type="date" id="manualVisitDate" class="crm-form-input" required>
+              </div>
+              <div class="crm-form-group">
+                <label class="crm-form-label">Ora Sosirii</label>
+                <input type="time" id="manualVisitTime" class="crm-form-input" value="12:00">
+              </div>
+            </div>
+            <div class="crm-form-group">
+              <label class="crm-form-label">Notă Recepție (opțional)</label>
+              <input type="text" id="manualVisitNote" class="crm-form-input" placeholder="ex: Antrenament brațe, check-in recuperat din condică">
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+              <button type="submit" class="crm-btn crm-btn-primary crm-btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Salvează Vizita în Istoric
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tab 3: Ajusteaza Abonament -->
+      <div id="tabEditPlan" style="display:none;">
+        <div class="history-add-visit-box">
+          <h4 style="font-size:0.88rem; font-weight:800; text-transform:uppercase; margin-bottom:0.85rem; color:var(--crm-text-main);">
+            Actualizare Valabilitate sau Bilanț Vizite
+          </h4>
+          <form id="editClientPlanForm" onsubmit="handleEditClientPlanSubmit(event)">
+            <div class="crm-form-row">
+              <div class="crm-form-group">
+                <label class="crm-form-label">Tip Abonament</label>
+                <select id="editClientPlanSelect" class="crm-form-select">
+                  <option value="1 Vizită">1 Vizită</option>
+                  <option value="8 Vizite">8 Vizite</option>
+                  <option value="12 Vizite">12 Vizite</option>
+                  <option value="Nelimitat 1 Lună">Nelimitat 1 Lună</option>
+                  <option value="Nelimitat 3 Luni">Nelimitat 3 Luni</option>
+                  <option value="Nelimitat 6 Luni">Nelimitat 6 Luni</option>
+                  <option value="Nelimitat 12 Luni">Nelimitat 12 Luni</option>
+                  <option value="Antrenament Individual">Antrenament Individual</option>
+                </select>
+              </div>
+              <div class="crm-form-group">
+                <label class="crm-form-label">Status Abonament</label>
+                <select id="editClientStatusSelect" class="crm-form-select">
+                  <option value="Activ">Activ</option>
+                  <option value="Expirat">Expirat / Epuizat</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="crm-form-row">
+              <div class="crm-form-group">
+                <label class="crm-form-label">Dată Început</label>
+                <input type="text" id="editClientStartDate" class="crm-form-input">
+              </div>
+              <div class="crm-form-group">
+                <label class="crm-form-label">Dată Expirare</label>
+                <input type="text" id="editClientEndDate" class="crm-form-input">
+              </div>
+            </div>
+
+            <div class="crm-form-row" id="editVisitsBalanceGroup">
+              <div class="crm-form-group">
+                <label class="crm-form-label">Vizite Rămase</label>
+                <input type="number" id="editClientVisitsLeft" class="crm-form-input" min="0">
+              </div>
+              <div class="crm-form-group">
+                <label class="crm-form-label">Total Vizite Incluse</label>
+                <input type="number" id="editClientTotalAllowed" class="crm-form-input" min="1">
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end;">
+              <button type="submit" class="crm-btn crm-btn-primary crm-btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Actualizează Datele Abonamentului
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+        <button type="button" class="crm-btn crm-btn-secondary" data-close-crm-modal>Închide</button>
+      </div>
     </div>
   </div>
 

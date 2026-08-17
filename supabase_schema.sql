@@ -28,6 +28,21 @@ CREATE TABLE IF NOT EXISTS public.clients (
     price NUMERIC NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'Activ',
     visits_left INTEGER DEFAULT NULL,
+    total_visits_allowed INTEGER DEFAULT NULL,
+    is_in_gym BOOLEAN DEFAULT FALSE,
+    last_checkin TIMESTAMPTZ DEFAULT NULL,
+    notes TEXT DEFAULT ''
+);
+
+-- 2.1. CLIENT VISITS & ATTENDANCE LOG TABLE
+CREATE TABLE IF NOT EXISTS public.visits (
+    id TEXT PRIMARY KEY DEFAULT ('VIS-' || substr(md5(random()::text), 1, 8)),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    client_id TEXT NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+    visit_date TEXT NOT NULL,
+    visit_time TEXT NOT NULL,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    plan TEXT NOT NULL,
     notes TEXT DEFAULT ''
 );
 
@@ -101,9 +116,12 @@ CREATE POLICY "Public can insert leads" ON public.leads FOR INSERT WITH CHECK (t
 DROP POLICY IF EXISTS "Anon full access to leads" ON public.leads;
 CREATE POLICY "Anon full access to leads" ON public.leads FOR ALL USING (true) WITH CHECK (true);
 
--- Clients Policies
+-- Clients & Visits Policies
 DROP POLICY IF EXISTS "Anon full access to clients" ON public.clients;
 CREATE POLICY "Anon full access to clients" ON public.clients FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access to visits" ON public.visits;
+CREATE POLICY "Anon full access to visits" ON public.visits FOR ALL USING (true) WITH CHECK (true);
 
 -- Expenses Policies
 DROP POLICY IF EXISTS "Anon full access to expenses" ON public.expenses;
@@ -121,4 +139,4 @@ DROP POLICY IF EXISTS "Anon can update pricing" ON public.pricing_config;
 CREATE POLICY "Anon can update pricing" ON public.pricing_config FOR ALL USING (true) WITH CHECK (true);
 
 -- Enable Realtime (optional, for live updates)
-ALTER PUBLICATION supabase_realtime ADD TABLE public.leads, public.clients, public.expenses, public.pricing_config;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.leads, public.clients, public.visits, public.expenses, public.pricing_config;

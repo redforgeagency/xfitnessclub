@@ -109,6 +109,42 @@ async function dbDeleteClient(id) {
   }
 }
 
+async function dbGetVisits() {
+  if (!db) return null;
+  try {
+    const { data, error } = await db.from('visits').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.warn('Supabase fetch visits failed:', err);
+    return null;
+  }
+}
+
+async function dbInsertVisit(visitData) {
+  if (!db) return null;
+  try {
+    const { data, error } = await db.from('visits').insert([visitData]).select();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.warn('Supabase insert visit failed:', err);
+    return null;
+  }
+}
+
+async function dbDeleteVisit(id) {
+  if (!db) return null;
+  try {
+    const { error } = await db.from('visits').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete visit failed:', err);
+    return false;
+  }
+}
+
 async function dbGetExpenses() {
   if (!db) return null;
   try {
@@ -221,6 +257,9 @@ window.dbClient = {
   insertClient: dbInsertClient,
   updateClient: dbUpdateClient,
   deleteClient: dbDeleteClient,
+  getVisits: dbGetVisits,
+  insertVisit: dbInsertVisit,
+  deleteVisit: dbDeleteVisit,
   getExpenses: dbGetExpenses,
   insertExpense: dbInsertExpense,
   deleteExpense: dbDeleteExpense,
