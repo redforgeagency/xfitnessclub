@@ -63,6 +63,18 @@ CREATE TABLE IF NOT EXISTS public.expenses (
     notes TEXT DEFAULT ''
 );
 
+-- 3.1. PLANNED EXPENSES TABLE (Future budget & investments tracking)
+CREATE TABLE IF NOT EXISTS public.planned_expenses (
+    id TEXT PRIMARY KEY DEFAULT ('PEXP-' || substr(md5(random()::text), 1, 8)),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    title TEXT NOT NULL,
+    amount NUMERIC NOT NULL DEFAULT 0,
+    category TEXT NOT NULL,
+    target_date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'În Așteptare',
+    notes TEXT DEFAULT ''
+);
+
 -- 4. CUSTOM EXPENSE CATEGORIES
 CREATE TABLE IF NOT EXISTS public.custom_categories (
     id TEXT PRIMARY KEY DEFAULT ('CAT-' || substr(md5(random()::text), 1, 8)),
@@ -130,8 +142,13 @@ DROP POLICY IF EXISTS "Anon full access to visits" ON public.visits;
 CREATE POLICY "Anon full access to visits" ON public.visits FOR ALL USING (true) WITH CHECK (true);
 
 -- Expenses Policies
+ALTER TABLE public.planned_expenses ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS "Anon full access to expenses" ON public.expenses;
 CREATE POLICY "Anon full access to expenses" ON public.expenses FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anon full access to planned_expenses" ON public.planned_expenses;
+CREATE POLICY "Anon full access to planned_expenses" ON public.planned_expenses FOR ALL USING (true) WITH CHECK (true);
 
 -- Categories Policies
 DROP POLICY IF EXISTS "Anon full access to categories" ON public.custom_categories;
@@ -145,4 +162,4 @@ DROP POLICY IF EXISTS "Anon can update pricing" ON public.pricing_config;
 CREATE POLICY "Anon can update pricing" ON public.pricing_config FOR ALL USING (true) WITH CHECK (true);
 
 -- Enable Realtime (optional, for live updates)
-ALTER PUBLICATION supabase_realtime ADD TABLE public.leads, public.clients, public.visits, public.expenses, public.pricing_config;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.leads, public.clients, public.visits, public.expenses, public.planned_expenses, public.pricing_config;

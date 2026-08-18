@@ -1,3 +1,14 @@
+function cleanCurrentURL() {
+  try {
+    const path = window.location.pathname;
+    if (path.endsWith('/index.html') || path.endsWith('/index') || path.endsWith('/home')) {
+      const cleanPath = path.replace(/\/(index(\.html)?|home)$/, '') || '/';
+      window.history.replaceState(null, '', cleanPath + window.location.search + window.location.hash);
+    }
+  } catch (e) {}
+}
+cleanCurrentURL();
+
 function escapeHTML(str) {
   if (!str || typeof str !== 'string') return '';
   return str

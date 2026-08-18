@@ -1209,10 +1209,605 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 0.85rem;
 }
+/* Straight line divider for Planned Expenses */
+.crm-expenses-straight-divider {
+  border: none;
+  border-top: 2px solid #0F172A;
+  margin: 2.75rem 0 2.25rem 0;
+  width: 100%;
+  opacity: 0.9;
+}
+
+/* Planned Expenses KPI Mini Cards */
+.planned-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.planned-kpi-card {
+  background: #FFFFFF;
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.planned-kpi-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--crm-text-muted);
+}
+
+.planned-kpi-val {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--crm-text-main);
+}
+
+/* Status Badges for Planned Expenses */
+.status-planned-pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #B45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-planned-done {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Follow-up View & Batch Actions */
+.followup-top-bar {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 0.65rem !important;
+  flex-wrap: nowrap !important;
+  margin-bottom: 1.25rem !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.followup-quick-filters {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex-shrink: 1;
+}
+
+.followup-filter-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--crm-text-muted);
+  margin-right: 0.2rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.quick-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-heading);
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 0.38rem 0.75rem;
+  border-radius: 99px;
+  border: 1px solid var(--crm-border);
+  background: #FFFFFF;
+  color: var(--crm-text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.quick-filter-chip.chip-deselect {
+  color: var(--crm-text-muted);
+  border-style: dashed;
+}
+
+.quick-filter-chip:hover {
+  border-color: var(--crm-text-muted);
+  background: #F8FAFC;
+}
+
+.quick-filter-chip.active {
+  background: var(--crm-text-main);
+  color: #FFFFFF;
+  border-color: var(--crm-text-main);
+}
+
+.followup-templates-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.template-select-box {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #FFFFFF;
+  border: 1px solid var(--crm-border);
+  border-radius: 8px;
+  padding: 0 0.55rem;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.template-select-box svg {
+  color: var(--crm-text-muted);
+  flex-shrink: 0;
+}
+
+.template-select-box select {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--crm-text-main);
+  padding: 0.25rem 0.2rem;
+  outline: none;
+  cursor: pointer;
+  max-width: 210px;
+}
+
+.btn-edit-templates {
+  height: 34px;
+  padding: 0 0.85rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.batch-actions-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  background: #0B0D10;
+  color: #FFFFFF;
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: slideDownFade 0.2s ease;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.batch-actions-bar.active {
+  display: flex;
+}
+
+@keyframes slideDownFade {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.batch-actions-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.batch-count-badge {
+  background: var(--crm-red);
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+}
+
+/* Viber & SMS specific action buttons */
+.table-action-btn.btn-viber {
+  background: rgba(115, 96, 242, 0.08);
+  color: #624CE0;
+  border-color: rgba(115, 96, 242, 0.3);
+}
+
+.table-action-btn.btn-viber:hover {
+  background: #7360F2;
+  color: #FFFFFF;
+  border-color: #7360F2;
+}
+
+.table-action-btn.btn-sms {
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563EB;
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.table-action-btn.btn-sms:hover {
+  background: #2563EB;
+  color: #FFFFFF;
+  border-color: #2563EB;
+}
+
+.crm-btn-viber {
+  background: #7360F2;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(115, 96, 242, 0.25);
+}
+
+.crm-btn-viber:hover {
+  background: #5E49E2;
+  transform: translateY(-1px);
+}
+
+.crm-btn-sms {
+  background: #2563EB;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.crm-btn-sms:hover {
+  background: #1D4ED8;
+  transform: translateY(-1px);
+}
+
+/* Large & Spacious Template Manager Modal */
+#manageTemplatesModal .crm-modal-card {
+  max-width: 1120px !important;
+  width: 95vw !important;
+  padding: 2.25rem 2.5rem !important;
+}
+
+.manage-templates-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.75rem;
+  margin-top: 1rem;
+}
+
+#templatesListContainer {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.template-item-card {
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.template-item-card:hover {
+  border-color: var(--crm-red);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.template-item-card.active {
+  border-color: var(--crm-red);
+  background: rgba(229, 9, 20, 0.04);
+  box-shadow: 0 0 0 1px var(--crm-red);
+}
+
+.template-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.template-card-preview-text {
+  font-size: 0.78rem;
+  color: var(--crm-text-muted);
+  line-height: 1.45;
+  white-space: pre-line;
+  word-break: break-word;
+  margin-top: 0.35rem;
+}
+
+.template-editor-box {
+  background: #F8FAFC;
+  border: 1px solid var(--crm-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.template-editor-box .notif-textarea {
+  min-height: 240px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  padding: 1rem;
+}
+
+.template-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: #EDF2F7;
+  color: var(--crm-text-main);
+  cursor: pointer;
+  border: 1px solid #E2E8F0;
+  transition: background 0.15s;
+}
+
+.template-tag-chip:hover {
+  background: #E2E8F0;
+  color: var(--crm-red);
+}
+
+/* =============================================================================
+   CLIENT HISTORY CALENDAR VIEW
+   ============================================================================= */
+
+.history-calendar-container {
+  background: #F8FAFC;
+  border: 1px solid var(--crm-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.history-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--crm-text-muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-dot.dot-present {
+  background: var(--crm-green);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.legend-dot.dot-rest {
+  background: #CBD5E1;
+}
+
+.calendar-weekdays-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--crm-text-muted);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--crm-border);
+  margin-bottom: 0.5rem;
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.45rem;
+}
+
+.calendar-day-cell {
+  background: #FFFFFF;
+  border: 1px solid var(--crm-border);
+  border-radius: 10px;
+  min-height: 54px;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: default;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.calendar-day-cell.other-month {
+  opacity: 0.35;
+  background: #F1F5F9;
+}
+
+.calendar-day-cell.today {
+  border-color: #0F172A;
+  box-shadow: 0 0 0 1px #0F172A;
+}
+
+.calendar-day-cell.present {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(5, 150, 105, 0.07) 100%);
+  border-color: rgba(16, 185, 129, 0.5);
+  cursor: pointer;
+}
+
+.calendar-day-cell.present:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  border-color: var(--crm-green);
+}
+
+.calendar-day-num {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--crm-text-main);
+}
+
+.calendar-day-cell.present .calendar-day-num {
+  color: #065F46;
+}
+
+.calendar-day-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--crm-green);
+  color: #FFFFFF;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.calendar-day-details-box {
+  background: #FFFFFF;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideDownFade 0.2s ease;
+}
+
+/* Notification & Double Confirm Modals */
+.notif-preview-box {
+  background: #F8FAFC;
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.notif-client-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--crm-border);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.85rem;
+}
+
+.notif-textarea {
+  width: 100%;
+  min-height: 180px;
+  padding: 0.85rem;
+  border: 1px solid var(--crm-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  background: #FFFFFF;
+  color: var(--crm-text-main);
+  resize: vertical;
+}
+
+.notif-textarea:focus {
+  border-color: var(--crm-red);
+  outline: none;
+}
+
+.double-confirm-warning {
+  background: rgba(229, 9, 20, 0.06);
+  border: 1px solid rgba(229, 9, 20, 0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--crm-text-main);
+}
+
+.double-confirm-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--crm-border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: #F8FAFC;
+  margin-bottom: 1.25rem;
+}
+
+.double-confirm-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #EDF2F7;
+}
+
+.double-confirm-item:last-child {
+  border-bottom: none;
+}
+
+/* Toast notification */
+.crm-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: #0B0D10;
+  color: #FFFFFF;
+  padding: 0.85rem 1.35rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  z-index: 10000;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+
+.crm-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 @media (max-width: 1080px) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .planned-kpi-grid {
+    grid-template-columns: 1fr;
   }
   .crm-overview-grid {
     grid-template-columns: 1fr;

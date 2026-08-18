@@ -65,27 +65,57 @@ function initAuth() {
   }
 }
 
+function recalculateClientVisitsLeft(client) {
+  if (!client) return 0;
+  const isLimited = (client.plan || '').includes('Vizit');
+  if (!isLimited) {
+    client.visits_left = null;
+    return null;
+  }
+
+  const total = client.total_visits_allowed || (client.plan.includes('8') ? 8 : (client.plan.includes('12') ? 12 : 1));
+  client.total_visits_allowed = total;
+
+  const visitsCount = Array.isArray(client.visits) ? client.visits.length : 0;
+  client.visits_left = Math.max(0, total - visitsCount);
+
+  if (client.visits_left === 0) {
+    client.status = 'Expirat';
+  } else {
+    const now = Date.now();
+    const expiryMs = parseDateToMS(client.expiresDate);
+    if (expiryMs > 0 && expiryMs < now) {
+      client.status = 'Expirat';
+    } else {
+      client.status = 'Activ';
+    }
+  }
+
+  return client.visits_left;
+}
+
 function initCRMData() {
   if (!localStorage.getItem('xfitness_data_cleaned_v2')) {
     localStorage.setItem('xfitness_leads', JSON.stringify([]));
     localStorage.setItem('xfitness_clients', JSON.stringify([]));
     localStorage.setItem('xfitness_expenses', JSON.stringify([]));
+    localStorage.setItem('xfitness_planned_expenses', JSON.stringify([]));
     localStorage.setItem('xfitness_custom_categories', JSON.stringify([]));
     localStorage.setItem('xfitness_data_cleaned_v2', 'true');
   }
 
-  // Data fix for any existing client with history mismatch
+  if (!localStorage.getItem('xfitness_planned_expenses')) {
+    localStorage.setItem('xfitness_planned_expenses', JSON.stringify([]));
+  }
+
+  // Automatic Recalculation for all clients to ensure visits_left = total - visits.length
   try {
     const clients = JSON.parse(localStorage.getItem('xfitness_clients') || '[]');
     let modified = false;
     clients.forEach(c => {
-      if ((c.plan || '').includes('8 Vizite') && Array.isArray(c.visits)) {
-        const pastConfirmed = c.visits.filter(v => (v.notes || '').includes('istoric') || v.date !== formatDateRO(new Date())).length;
-        if (pastConfirmed > 0 && c.visits_left > (8 - pastConfirmed)) {
-          c.visits_left = Math.max(0, 8 - pastConfirmed);
-          c.total_visits_allowed = 8;
-          modified = true;
-        }
+      if ((c.plan || '').includes('Vizit')) {
+        recalculateClientVisitsLeft(c);
+        modified = true;
       }
     });
     if (modified) {
@@ -97,11 +127,12 @@ function initCRMData() {
 async function syncFromSupabase() {
   if (!window.dbClient) return;
   try {
-    const [leads, clients, visits, expenses, categories, pricing] = await Promise.all([
+    const [leads, clients, visits, expenses, plannedExpenses, categories, pricing] = await Promise.all([
       window.dbClient.getLeads ? window.dbClient.getLeads() : null,
       window.dbClient.getClients ? window.dbClient.getClients() : null,
       window.dbClient.getVisits ? window.dbClient.getVisits() : null,
       window.dbClient.getExpenses ? window.dbClient.getExpenses() : null,
+      window.dbClient.getPlannedExpenses ? window.dbClient.getPlannedExpenses() : null,
       window.dbClient.getCategories ? window.dbClient.getCategories() : null,
       window.dbClient.getPricing ? window.dbClient.getPricing() : null
     ]);
@@ -129,12 +160,8 @@ async function syncFromSupabase() {
       const normalizedClients = clients.map(c => {
         const clientVisits = visitsByClient[c.id] || (c.visits && Array.isArray(c.visits) ? c.visits : []);
         const totalAllowed = c.total_visits_allowed || (c.plan.includes('8 Vizite') ? 8 : (c.plan.includes('12 Vizite') ? 12 : (c.plan.includes('1 Vizit') ? 1 : null)));
-        let visitsLeft = c.visits_left;
-        if (visitsLeft === undefined || visitsLeft === null) {
-          visitsLeft = totalAllowed;
-        }
 
-        return {
+        const clientObj = {
           id: c.id,
           name: c.name,
           phone: c.phone,
@@ -143,12 +170,24 @@ async function syncFromSupabase() {
           startDate: c.start_date || c.startDate || '',
           expiresDate: c.end_date || c.expiresDate || '',
           status: c.status || 'Activ',
-          visits_left: visitsLeft,
+          visits_left: c.visits_left,
           total_visits_allowed: totalAllowed,
           is_in_gym: Boolean(c.is_in_gym),
           last_checkin: c.last_checkin || null,
           visits: clientVisits
         };
+
+        recalculateClientVisitsLeft(clientObj);
+
+        // If Supabase had an outdated visits_left value, sync it back automatically
+        if (c.visits_left !== clientObj.visits_left && window.dbClient?.updateClient) {
+          window.dbClient.updateClient(clientObj.id, {
+            visits_left: clientObj.visits_left,
+            status: clientObj.status
+          });
+        }
+
+        return clientObj;
       });
       localStorage.setItem('xfitness_clients', JSON.stringify(normalizedClients));
     }
@@ -165,6 +204,19 @@ async function syncFromSupabase() {
       localStorage.setItem('xfitness_expenses', JSON.stringify(normalizedExpenses));
     }
 
+    if (plannedExpenses && Array.isArray(plannedExpenses)) {
+      const normalizedPlanned = plannedExpenses.map(p => ({
+        id: p.id,
+        description: p.title || p.description || '',
+        category: p.category,
+        amount: Number(p.amount),
+        targetDate: p.target_date || p.targetDate || '',
+        status: p.status || 'În Așteptare',
+        notes: p.notes || ''
+      }));
+      localStorage.setItem('xfitness_planned_expenses', JSON.stringify(normalizedPlanned));
+    }
+
     if (categories && Array.isArray(categories) && categories.length) {
       localStorage.setItem('xfitness_custom_categories', JSON.stringify(categories));
     }
@@ -174,6 +226,7 @@ async function syncFromSupabase() {
     }
 
     populateCategorySelects();
+    populateTemplateSelects();
     renderAllViews();
   } catch (err) {
     console.warn('Sync from Supabase failed:', err);
@@ -220,15 +273,37 @@ function initCategoryManagement() {
       }
     });
   }
+
+  const plannedCatSelect = document.getElementById('newPlannedExpenseCategory');
+  const plannedCustomGroup = document.getElementById('plannedCustomCategoryGroup');
+
+  if (plannedCatSelect && plannedCustomGroup) {
+    plannedCatSelect.addEventListener('change', () => {
+      if (plannedCatSelect.value === '__NEW_CATEGORY__') {
+        plannedCustomGroup.style.display = 'block';
+        document.getElementById('newPlannedExpenseCustomCategory')?.focus();
+      } else {
+        plannedCustomGroup.style.display = 'none';
+      }
+    });
+  }
 }
 
 function populateCategorySelects() {
   const categories = getAllCategories();
   const selectExpense = document.getElementById('newExpenseCategory');
+  const selectPlanned = document.getElementById('newPlannedExpenseCategory');
   const filterExpense = document.getElementById('expenseCategoryFilter');
 
   if (selectExpense) {
     selectExpense.innerHTML = `
+      ${categories.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}
+      <option value="__NEW_CATEGORY__" style="color:var(--crm-red); font-weight:700;">+ Adaugă Categorie Personalizată...</option>
+    `;
+  }
+
+  if (selectPlanned) {
+    selectPlanned.innerHTML = `
       ${categories.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}
       <option value="__NEW_CATEGORY__" style="color:var(--crm-red); font-weight:700;">+ Adaugă Categorie Personalizată...</option>
     `;
@@ -287,6 +362,18 @@ function getExpenses() {
   } catch {
     return [];
   }
+}
+
+function getPlannedExpenses() {
+  try {
+    return JSON.parse(localStorage.getItem('xfitness_planned_expenses') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function savePlannedExpenses(planned) {
+  localStorage.setItem('xfitness_planned_expenses', JSON.stringify(planned));
 }
 
 // =============================================================================
@@ -592,7 +679,9 @@ function renderAllViews() {
   renderLiveAttendanceTable();
   renderLeadsTable();
   renderClientsTable();
+  renderFollowupTable();
   renderExpensesTable();
+  renderPlannedExpensesTable();
   renderExpenseCategoryBars();
 }
 
@@ -886,6 +975,9 @@ function renderClientsTable() {
         <td><span class="status-badge ${statusClass}">${c.status}</span></td>
         <td>
           <div style="display:flex; gap:0.4rem;">
+            <button class="table-action-btn btn-viber btn-icon-only" onclick="openSendNotificationModal('${c.id}', 'viber')" title="Trimite Notificare Viber / SMS">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M20.4 4.6C18.6 2.8 15.8 2 12.3 2 7.7 2 3.8 3.5 2.6 7.4c-.8 2.8-.2 5.5 1.5 7.6l-.8 3.1c-.2.8.5 1.5 1.3 1.3l3.2-.8c1.4.7 3 1.1 4.5 1.1 4.6 0 8.5-1.5 9.7-5.4 1.2-3.9.3-7.8-1.6-9.7zm-2.8 9.9c-.3.9-1.5 1.6-2.5 1.6-1.1 0-2.8-.8-4.7-2.7-1.9-1.9-2.7-3.6-2.7-4.7 0-1 .7-2.2 1.6-2.5.4-.1.8 0 1 .3l1.1 1.7c.2.4.2.8 0 1.1l-.5.7c-.2.2-.2.5 0 .7.6 1 1.4 1.8 2.4 2.4.2.2.5.2.7 0l.7-.5c.3-.2.7-.2 1.1 0l1.7 1.1c.3.3.4.7.2 1.1z"/></svg>
+            </button>
             <button class="table-action-btn btn-history" onclick="openClientHistoryModal('${c.id}')" title="Istoric & Profil">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
               Istoric
@@ -940,6 +1032,7 @@ window.handleClientCheckIn = async function(clientId) {
     };
 
     client.visits.unshift(visitItem);
+    recalculateClientVisitsLeft(client);
 
     if (window.dbClient?.insertVisit) {
       window.dbClient.insertVisit({
@@ -1000,11 +1093,14 @@ window.handleClientCheckOut = async function(clientId) {
 };
 
 // =============================================================================
-// CLIENT PROFILE & HISTORY MODAL
+// CLIENT PROFILE & HISTORY MODAL + CALENDAR VIEW
 // =============================================================================
+
+let currentHistoryCalendarDate = new Date();
 
 window.openClientHistoryModal = function(clientId) {
   currentActiveHistoryClientId = clientId;
+  currentHistoryCalendarDate = new Date();
   renderClientHistoryModal();
   showHistoryTab('tabVisitsList');
   openModal('clientHistoryModal');
@@ -1015,6 +1111,9 @@ function renderClientHistoryModal() {
   const clients = getClients();
   const client = clients.find(c => c.id === currentActiveHistoryClientId);
   if (!client) return;
+
+  // Auto-recalculate visits left based on # of visits in history
+  recalculateClientVisitsLeft(client);
 
   const streakInfo = calculateClientStreak(client.visits);
   const isLimited = (client.plan || '').includes('Vizit');
@@ -1040,21 +1139,32 @@ function renderClientHistoryModal() {
   }
 
   if (elQuickAction) {
+    let checkinBtn = '';
     if (client.is_in_gym) {
-      elQuickAction.innerHTML = `
+      checkinBtn = `
         <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="handleClientCheckOut('${client.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
-          Încheie Antrenament (Check-out)
+          Check-out
         </button>
       `;
     } else {
-      elQuickAction.innerHTML = `
+      checkinBtn = `
         <button type="button" class="crm-btn crm-btn-primary crm-btn-sm" onclick="handleClientCheckIn('${client.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          Înregistrează Vizită (Check-in)
+          Check-in
         </button>
       `;
     }
+
+    elQuickAction.innerHTML = `
+      <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+        <button type="button" class="crm-btn crm-btn-viber crm-btn-sm" onclick="openSendNotificationModal('${client.id}', 'viber')" title="Trimite Notificare Viber">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M20.4 4.6C18.6 2.8 15.8 2 12.3 2 7.7 2 3.8 3.5 2.6 7.4c-.8 2.8-.2 5.5 1.5 7.6l-.8 3.1c-.2.8.5 1.5 1.3 1.3l3.2-.8c1.4.7 3 1.1 4.5 1.1 4.6 0 8.5-1.5 9.7-5.4 1.2-3.9.3-7.8-1.6-9.7zm-2.8 9.9c-.3.9-1.5 1.6-2.5 1.6-1.1 0-2.8-.8-4.7-2.7-1.9-1.9-2.7-3.6-2.7-4.7 0-1 .7-2.2 1.6-2.5.4-.1.8 0 1 .3l1.1 1.7c.2.4.2.8 0 1.1l-.5.7c-.2.2-.2.5 0 .7.6 1 1.4 1.8 2.4 2.4.2.2.5.2.7 0l.7-.5c.3-.2.7-.2 1.1 0l1.7 1.1c.3.3.4.7.2 1.1z"/></svg>
+          Viber
+        </button>
+        ${checkinBtn}
+      </div>
+    `;
   }
 
   // Stat Boxes
@@ -1084,7 +1194,7 @@ function renderClientHistoryModal() {
   if (elVisitsVal) {
     if (isLimited) {
       const tot = client.total_visits_allowed || (client.plan.includes('8') ? 8 : (client.plan.includes('12') ? 12 : 1));
-      const left = client.visits_left !== undefined && client.visits_left !== null ? client.visits_left : tot;
+      const left = client.visits_left !== undefined && client.visits_left !== null ? client.visits_left : Math.max(0, tot - (client.visits?.length || 0));
       elVisitsVal.textContent = `${left} / ${tot} rămase`;
     } else {
       elVisitsVal.textContent = 'Nelimitat';
@@ -1144,10 +1254,13 @@ function renderClientHistoryModal() {
   if (manualDateInput && !manualDateInput.value) {
     manualDateInput.value = new Date().toISOString().slice(0, 10);
   }
+
+  // Render Calendar if that tab is active
+  renderClientHistoryCalendar();
 }
 
 window.showHistoryTab = function(tabId) {
-  const tabs = ['tabVisitsList', 'tabAddManualVisit', 'tabEditPlan'];
+  const tabs = ['tabVisitsList', 'tabAddManualVisit', 'tabEditPlan', 'tabVisitsCalendar'];
   tabs.forEach(t => {
     const el = document.getElementById(t);
     if (el) el.style.display = t === tabId ? 'block' : 'none';
@@ -1161,6 +1274,152 @@ window.showHistoryTab = function(tabId) {
       b.classList.remove('active');
     }
   });
+
+  if (tabId === 'tabVisitsCalendar') {
+    renderClientHistoryCalendar();
+  }
+};
+
+function renderClientHistoryCalendar() {
+  if (!currentActiveHistoryClientId) return;
+  const client = getClients().find(c => c.id === currentActiveHistoryClientId);
+  if (!client) return;
+
+  const year = currentHistoryCalendarDate.getFullYear();
+  const month = currentHistoryCalendarDate.getMonth();
+
+  const monthNamesRO = [
+    'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
+    'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
+  ];
+
+  const titleEl = document.getElementById('historyCalendarMonthTitle');
+  if (titleEl) titleEl.textContent = `${monthNamesRO[month]} ${year}`;
+
+  const gridEl = document.getElementById('historyCalendarGrid');
+  if (!gridEl) return;
+
+  const visitsByDate = {};
+  (client.visits || []).forEach(v => {
+    if (!visitsByDate[v.date]) visitsByDate[v.date] = [];
+    visitsByDate[v.date].push(v);
+  });
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+  const daysInMonth = lastDayOfMonth.getDate();
+
+  let startingDay = firstDayOfMonth.getDay() - 1;
+  if (startingDay === -1) startingDay = 6;
+
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
+  const totalSlots = Math.ceil((startingDay + daysInMonth) / 7) * 7;
+
+  const now = new Date();
+  const todayFormatted = formatDateRO(now);
+
+  let html = '';
+
+  for (let i = 0; i < totalSlots; i++) {
+    let dayNum = 0;
+    let isCurrentMonth = true;
+    let cellDateStr = '';
+
+    if (i < startingDay) {
+      dayNum = prevMonthLastDay - (startingDay - 1 - i);
+      isCurrentMonth = false;
+      const prevM = month === 0 ? 12 : month;
+      const prevY = month === 0 ? year - 1 : year;
+      cellDateStr = `${String(dayNum).padStart(2, '0')}.${String(prevM).padStart(2, '0')}.${prevY}`;
+    } else if (i >= startingDay + daysInMonth) {
+      dayNum = i - (startingDay + daysInMonth) + 1;
+      isCurrentMonth = false;
+      const nextM = month === 11 ? 1 : month + 2;
+      const nextY = month === 11 ? year + 1 : year;
+      cellDateStr = `${String(dayNum).padStart(2, '0')}.${String(nextM).padStart(2, '0')}.${nextY}`;
+    } else {
+      dayNum = i - startingDay + 1;
+      cellDateStr = `${String(dayNum).padStart(2, '0')}.${String(month + 1).padStart(2, '0')}.${year}`;
+    }
+
+    const dayVisits = visitsByDate[cellDateStr] || [];
+    const hasVisited = dayVisits.length > 0;
+    const isToday = cellDateStr === todayFormatted;
+
+    let cellClasses = 'calendar-day-cell';
+    if (!isCurrentMonth) cellClasses += ' other-month';
+    if (isToday) cellClasses += ' today';
+    if (hasVisited) cellClasses += ' present';
+
+    let badgeHTML = '';
+    if (hasVisited) {
+      const times = dayVisits.map(v => v.time || '12:00').join(', ');
+      badgeHTML = `
+        <div class="calendar-day-badge" title="Vizită: ${times}">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          ${times}
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="${cellClasses}" onclick="showCalendarDayVisitDetails('${cellDateStr}', '${client.id}')">
+        <div class="calendar-day-num">${dayNum}</div>
+        ${badgeHTML}
+      </div>
+    `;
+  }
+
+  gridEl.innerHTML = html;
+
+  const detailsBox = document.getElementById('historyCalendarDayDetails');
+  if (detailsBox) detailsBox.style.display = 'none';
+}
+
+window.prevHistoryCalendarMonth = function() {
+  currentHistoryCalendarDate.setMonth(currentHistoryCalendarDate.getMonth() - 1);
+  renderClientHistoryCalendar();
+};
+
+window.nextHistoryCalendarMonth = function() {
+  currentHistoryCalendarDate.setMonth(currentHistoryCalendarDate.getMonth() + 1);
+  renderClientHistoryCalendar();
+};
+
+window.showCalendarDayVisitDetails = function(dateStr, clientId) {
+  const client = getClients().find(c => c.id === clientId);
+  if (!client) return;
+
+  const dayVisits = (client.visits || []).filter(v => v.date === dateStr);
+  const detailsBox = document.getElementById('historyCalendarDayDetails');
+  if (!detailsBox) return;
+
+  if (dayVisits.length === 0) {
+    detailsBox.style.display = 'flex';
+    detailsBox.innerHTML = `
+      <div style="font-size:0.84rem; color:var(--crm-text-muted);">
+        📅 <strong>${dateStr}</strong> — Nicio vizită înregistrată în această zi (zi de odihnă).
+      </div>
+      <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="this.parentElement.style.display='none'">✕</button>
+    `;
+  } else {
+    detailsBox.style.display = 'flex';
+    detailsBox.innerHTML = `
+      <div>
+        <div style="font-size:0.88rem; font-weight:800; color:var(--crm-green); display:flex; align-items:center; gap:0.4rem;">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Antrenament Confirmat: ${dateStr} (${dayVisits.length} ${dayVisits.length === 1 ? 'intrare' : 'intrări'})
+        </div>
+        <div style="font-size:0.78rem; color:var(--crm-text-muted); margin-top:0.25rem;">
+          ${dayVisits.map(v => `• Ora ${v.time || '12:00'} — <em>${escapeHTML(v.notes || 'Check-in')}</em> (${escapeHTML(v.plan || client.plan)})`).join('<br>')}
+        </div>
+      </div>
+      <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="this.parentElement.style.display='none'">✕</button>
+    `;
+  }
+  try {
+    detailsBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch {}
 };
 
 window.handleManualVisitSubmit = async function(e) {
@@ -1185,12 +1444,6 @@ window.handleManualVisitSubmit = async function(e) {
   if (!client) return;
 
   if (!Array.isArray(client.visits)) client.visits = [];
-  const alreadyOnDay = client.visits.some(v => v.date === formattedDate);
-
-  const isLimited = (client.plan || '').includes('Vizit');
-  if (isLimited && !alreadyOnDay && client.visits_left !== undefined && client.visits_left > 0) {
-    client.visits_left = Math.max(0, client.visits_left - 1);
-  }
 
   const visitItem = {
     id: 'VIS-' + Date.now().toString(36).toUpperCase(),
@@ -1202,6 +1455,7 @@ window.handleManualVisitSubmit = async function(e) {
   };
 
   client.visits.unshift(visitItem);
+  recalculateClientVisitsLeft(client);
 
   saveClients(clients);
   renderAllViews();
@@ -1219,6 +1473,13 @@ window.handleManualVisitSubmit = async function(e) {
       notes: visitItem.notes
     });
   }
+
+  if (window.dbClient?.updateClient) {
+    window.dbClient.updateClient(client.id, {
+      visits_left: client.visits_left,
+      status: client.status
+    });
+  }
 };
 
 window.handleDeleteVisit = async function(visitId) {
@@ -1229,18 +1490,22 @@ window.handleDeleteVisit = async function(visitId) {
   const client = clients.find(c => c.id === currentActiveHistoryClientId);
   if (!client) return;
 
-  const isLimited = (client.plan || '').includes('Vizit');
-  if (isLimited && client.visits_left !== undefined) {
-    client.visits_left = Math.min(client.total_visits_allowed || 12, client.visits_left + 1);
-  }
-
   client.visits = (client.visits || []).filter(v => v.id !== visitId);
+  recalculateClientVisitsLeft(client);
+
   saveClients(clients);
   renderAllViews();
   renderClientHistoryModal();
 
   if (window.dbClient?.deleteVisit) {
     window.dbClient.deleteVisit(visitId);
+  }
+
+  if (window.dbClient?.updateClient) {
+    window.dbClient.updateClient(client.id, {
+      visits_left: client.visits_left,
+      status: client.status
+    });
   }
 };
 
@@ -1263,8 +1528,12 @@ window.handleEditClientPlanSubmit = async function(e) {
   client.status = status;
   client.startDate = startDate;
   client.expiresDate = endDate;
-  if (!isNaN(visitsLeft)) client.visits_left = visitsLeft;
   if (!isNaN(totalAllowed)) client.total_visits_allowed = totalAllowed;
+  if (!isNaN(visitsLeft)) {
+    client.visits_left = visitsLeft;
+  } else {
+    recalculateClientVisitsLeft(client);
+  }
 
   saveClients(clients);
   renderAllViews();
@@ -1598,6 +1867,10 @@ function initEventListeners() {
         visits: clientVisits
       };
 
+      if (isLimited) {
+        recalculateClientVisitsLeft(clientItem);
+      }
+
       const clients = getClients();
       clients.unshift(clientItem);
       saveClients(clients);
@@ -1674,6 +1947,73 @@ function initEventListeners() {
     completedVisitsInput.addEventListener('change', updateVisitsBalanceInputs);
   }
 
+  // Planned Expense Form Submit
+  const plannedExpenseForm = document.getElementById('newPlannedExpenseForm');
+  if (plannedExpenseForm) {
+    plannedExpenseForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const desc = document.getElementById('newPlannedExpenseDesc')?.value.trim() || 'Planificare';
+      let cat = document.getElementById('newPlannedExpenseCategory')?.value || 'Altele / Neprevăzute';
+
+      if (cat === '__NEW_CATEGORY__') {
+        const customCatInput = document.getElementById('newPlannedExpenseCustomCategory');
+        const customCatVal = customCatInput?.value.trim();
+        if (customCatVal) {
+          cat = customCatVal;
+          const customCats = JSON.parse(localStorage.getItem('xfitness_custom_categories') || '[]');
+          if (!customCats.includes(cat)) {
+            customCats.push(cat);
+            localStorage.setItem('xfitness_custom_categories', JSON.stringify(customCats));
+            if (window.dbClient?.insertCategory) {
+              window.dbClient.insertCategory(cat);
+            }
+            populateCategorySelects();
+          }
+        } else {
+          cat = 'Altele / Neprevăzute';
+        }
+      }
+
+      const amount = parseFloat(document.getElementById('newPlannedExpenseAmount')?.value) || 0;
+      const targetDate = document.getElementById('newPlannedExpenseDate')?.value.trim() || formatDateRO(new Date());
+      const status = document.getElementById('newPlannedExpenseStatus')?.value || 'În Așteptare';
+      const notes = document.getElementById('newPlannedExpenseNotes')?.value.trim() || '';
+
+      const plannedItem = {
+        id: 'PEXP-' + Date.now().toString(36).toUpperCase(),
+        description: desc,
+        category: cat,
+        amount: amount,
+        targetDate: targetDate,
+        status: status,
+        notes: notes
+      };
+
+      const plannedList = getPlannedExpenses();
+      plannedList.unshift(plannedItem);
+      savePlannedExpenses(plannedList);
+
+      if (window.dbClient?.insertPlannedExpense) {
+        window.dbClient.insertPlannedExpense({
+          id: plannedItem.id,
+          title: plannedItem.description,
+          amount: plannedItem.amount,
+          category: plannedItem.category,
+          target_date: plannedItem.targetDate,
+          status: plannedItem.status,
+          notes: plannedItem.notes
+        });
+      }
+
+      plannedExpenseForm.reset();
+      const plannedCustomGroup = document.getElementById('plannedCustomCategoryGroup');
+      if (plannedCustomGroup) plannedCustomGroup.style.display = 'none';
+      closeModal('addPlannedExpenseModal');
+      renderPlannedExpensesTable();
+      showToast('Cheltuiala de plan a fost adăugată cu succes!');
+    });
+  }
+
   // Search & Filter listeners
   const attSearch = document.getElementById('attendanceSearchInput');
   const attFilter = document.getElementById('attendanceStatusFilter');
@@ -1690,10 +2030,20 @@ function initEventListeners() {
   if (clientSearch) clientSearch.addEventListener('input', renderClientsTable);
   if (clientFilter) clientFilter.addEventListener('change', renderClientsTable);
 
+  const followupSearch = document.getElementById('followupSearchInput');
+  const followupFilter = document.getElementById('followupFilterSelect');
+  if (followupSearch) followupSearch.addEventListener('input', renderFollowupTable);
+  if (followupFilter) followupFilter.addEventListener('change', renderFollowupTable);
+
   const expenseSearch = document.getElementById('expenseSearchInput');
   const expenseFilter = document.getElementById('expenseCategoryFilter');
   if (expenseSearch) expenseSearch.addEventListener('input', renderExpensesTable);
   if (expenseFilter) expenseFilter.addEventListener('change', renderExpensesTable);
+
+  const plannedSearch = document.getElementById('plannedExpenseSearchInput');
+  const plannedFilter = document.getElementById('plannedExpenseStatusFilter');
+  if (plannedSearch) plannedSearch.addEventListener('input', renderPlannedExpensesTable);
+  if (plannedFilter) plannedFilter.addEventListener('change', renderPlannedExpensesTable);
 
   // Backup Export & Import
   const exportBtn = document.getElementById('exportBackupBtn');
@@ -1701,11 +2051,14 @@ function initEventListeners() {
     exportBtn.addEventListener('click', () => {
       const backupData = {
         exportDate: new Date().toISOString(),
-        version: '2.7',
+        version: '3.0',
         leads: getLeads(),
         clients: getClients(),
         expenses: getExpenses(),
-        customCategories: JSON.parse(localStorage.getItem('xfitness_custom_categories') || '[]')
+        plannedExpenses: getPlannedExpenses(),
+        customCategories: JSON.parse(localStorage.getItem('xfitness_custom_categories') || '[]'),
+        messageTemplates: getMessageTemplates(),
+        activeTemplateId: getActiveTemplateId()
       };
 
       const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -1733,11 +2086,15 @@ function initEventListeners() {
           if (data.leads) localStorage.setItem('xfitness_leads', JSON.stringify(data.leads));
           if (data.clients) localStorage.setItem('xfitness_clients', JSON.stringify(data.clients));
           if (data.expenses) localStorage.setItem('xfitness_expenses', JSON.stringify(data.expenses));
+          if (data.plannedExpenses) localStorage.setItem('xfitness_planned_expenses', JSON.stringify(data.plannedExpenses));
           if (data.customCategories) localStorage.setItem('xfitness_custom_categories', JSON.stringify(data.customCategories));
+          if (data.messageTemplates) saveMessageTemplates(data.messageTemplates);
+          if (data.activeTemplateId) setActiveTemplateId(data.activeTemplateId);
 
           populateCategorySelects();
+          populateTemplateSelects();
           renderAllViews();
-          alert('Baza de date a fost restaurată cu succes din fișierul de backup!');
+          showToast('Baza de date a fost restaurată cu succes din fișierul de backup!');
         } catch (err) {
           alert('Fișier de backup invalid.');
           console.error(err);
@@ -1926,6 +2283,684 @@ window.deleteExpense = function(expenseId) {
   if (window.dbClient?.deleteExpense) {
     window.dbClient.deleteExpense(expenseId);
   }
+};
+
+// =============================================================================
+// PLANNED EXPENSES (CHELTUIELI DE PLAN & INVESTITII VIITOARE)
+// =============================================================================
+
+function renderPlannedExpensesTable() {
+  const planned = getPlannedExpenses();
+  const tbody = document.getElementById('plannedExpensesTableBody');
+  const searchInput = document.getElementById('plannedExpenseSearchInput');
+  const statusFilter = document.getElementById('plannedExpenseStatusFilter');
+
+  const totalSum = planned.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const pendingCount = planned.filter(p => p.status === 'În Așteptare').length;
+  const doneCount = planned.filter(p => p.status === 'Realizat').length;
+
+  const elTotal = document.getElementById('plannedKpiTotal');
+  const elPending = document.getElementById('plannedKpiPending');
+  const elDone = document.getElementById('plannedKpiDone');
+
+  if (elTotal) elTotal.textContent = `${totalSum.toLocaleString('ro-RO')} Lei`;
+  if (elPending) elPending.textContent = `${pendingCount}`;
+  if (elDone) elDone.textContent = `${doneCount}`;
+
+  if (!tbody) return;
+
+  const query = (searchInput?.value || '').toLowerCase().trim();
+  const filter = statusFilter?.value || 'ALL';
+
+  const filtered = planned.filter(p => {
+    const desc = (p.description || '').toLowerCase();
+    const cat = (p.category || '').toLowerCase();
+    const matchesQuery = desc.includes(query) || cat.includes(query);
+    const matchesStatus = filter === 'ALL' || p.status === filter;
+    return matchesQuery && matchesStatus;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--crm-text-muted); padding:2rem;">Nicio cheltuială planificată înregistrată. Apasă butonul „Adaugă Cheltuială de Plan” pentru a planifica investiții viitoare (ex: podea, aparate noi).</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const isDone = p.status === 'Realizat';
+    const statusBadgeClass = isDone ? 'status-planned-done' : 'status-planned-pending';
+
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHTML(p.description)}</strong>
+          ${p.notes ? `<br><span style="font-size:0.75rem; color:var(--crm-text-muted);">${escapeHTML(p.notes)}</span>` : ''}
+        </td>
+        <td><span class="status-badge" style="background:#F1F5F9; color:var(--crm-text-main); font-weight:700;">${escapeHTML(p.category)}</span></td>
+        <td><strong style="color:var(--crm-text-main); font-size:0.95rem;">${Number(p.amount).toLocaleString('ro-RO')} Lei</strong></td>
+        <td><span style="font-size:0.82rem; font-weight:700; color:var(--crm-text-muted);">${escapeHTML(p.targetDate)}</span></td>
+        <td>
+          <button type="button" class="status-badge ${statusBadgeClass}" onclick="togglePlannedExpenseStatus('${p.id}')" style="cursor:pointer; border-radius:99px;" title="Apasă pentru a comuta statusul">
+            ${isDone ? '✓ Realizat' : '⏳ În Așteptare'}
+          </button>
+        </td>
+        <td>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="table-action-btn btn-icon-only" onclick="togglePlannedExpenseStatus('${p.id}')" title="${isDone ? 'Marchează ca În Așteptare' : 'Marchează ca Realizat'}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+            <button class="table-action-btn btn-delete btn-icon-only" onclick="deletePlannedExpense('${p.id}')" title="Șterge Cheltuială Planificată">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.togglePlannedExpenseStatus = async function(id) {
+  const planned = getPlannedExpenses();
+  const item = planned.find(p => p.id === id);
+  if (!item) return;
+
+  item.status = item.status === 'Realizat' ? 'În Așteptare' : 'Realizat';
+  savePlannedExpenses(planned);
+  renderPlannedExpensesTable();
+  showToast(`Status cheltuială planificată: ${item.status}`);
+
+  if (window.dbClient?.updatePlannedExpense) {
+    window.dbClient.updatePlannedExpense(id, { status: item.status });
+  }
+};
+
+window.deletePlannedExpense = async function(id) {
+  if (!confirm('Sigur doriți să ștergeți această cheltuială planificată?')) return;
+  let planned = getPlannedExpenses();
+  planned = planned.filter(p => p.id !== id);
+  savePlannedExpenses(planned);
+  renderPlannedExpensesTable();
+  showToast('Cheltuiala planificată a fost ștearsă.');
+
+  if (window.dbClient?.deletePlannedExpense) {
+    window.dbClient.deletePlannedExpense(id);
+  }
+};
+
+// =============================================================================
+// TOAST NOTIFICATION
+// =============================================================================
+
+function showToast(message) {
+  const toast = document.getElementById('crmToast');
+  const msgEl = document.getElementById('crmToastMessage');
+  if (!toast) return;
+  if (msgEl) msgEl.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(window.__crmToastTimeout);
+  window.__crmToastTimeout = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3200);
+}
+
+// =============================================================================
+// FOLLOW-UP, MESSAGE TEMPLATES & NOTIFICĂRI VIBER
+// =============================================================================
+
+const DEFAULT_MESSAGE_TEMPLATES = [
+  {
+    id: 'TPL-1',
+    name: 'Schița 1: Expirare & Vizite (Standard)',
+    text: `Bună ziua!\n\nȚinem să vă reamintim că abonamentul dvs se finiseaza pe data de {DATA_EXPIRARE}\nMai aveti {VIZITE_RAMASE} vizite de executat .\n\nVă rugăm să le indepliniți până la data expirarii :)\n\nMulțumim că sunteți cu noi .\nCu multă stimă si respect echipa Xfitnessclub🍀`
+  },
+  {
+    id: 'TPL-2',
+    name: 'Schița 2: Reminder Prietenos / Nelimitat',
+    text: `Salutare {NUME}!\n\nAbonamentul tău la X-Fitness Club ({PLAN}) este valabil până pe data de {DATA_EXPIRARE}.\nTe așteptăm cu multă energie la antrenamente! 💪\n\nCu drag,\nEchipa X-Fitness Club 🍀`
+  },
+  {
+    id: 'TPL-3',
+    name: 'Schița 3: Abonament Expirat / Reînnoire',
+    text: `Bună ziua {NUME}!\n\nAbonamentul dvs ({PLAN}) a expirat. Vă așteptăm cu drag la recepție pentru reînnoire și continuarea antrenamentelor la X-Fitness Club! 🏋️‍♂️\n\nCu multă stimă,\nEchipa Xfitnessclub🍀`
+  }
+];
+
+function getMessageTemplates() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('xfitness_message_templates'));
+    if (saved && Array.isArray(saved) && saved.length > 0) return saved;
+  } catch {}
+  return DEFAULT_MESSAGE_TEMPLATES;
+}
+
+function saveMessageTemplates(templates) {
+  localStorage.setItem('xfitness_message_templates', JSON.stringify(templates));
+}
+
+function getActiveTemplateId() {
+  return localStorage.getItem('xfitness_active_template_id') || 'TPL-1';
+}
+
+function setActiveTemplateId(id) {
+  localStorage.setItem('xfitness_active_template_id', id);
+}
+
+function populateTemplateSelects() {
+  const templates = getMessageTemplates();
+  const activeId = getActiveTemplateId();
+  const selectEl = document.getElementById('followupActiveTemplateSelect');
+
+  if (selectEl) {
+    selectEl.innerHTML = templates.map(t => `
+      <option value="${escapeHTML(t.id)}" ${t.id === activeId ? 'selected' : ''}>
+        ${escapeHTML(t.name)}
+      </option>
+    `).join('');
+  }
+}
+
+window.changeActiveTemplate = function(templateId) {
+  setActiveTemplateId(templateId);
+  renderFollowupTable();
+  const templates = getMessageTemplates();
+  const t = templates.find(item => item.id === templateId);
+  showToast(`Schiță activă selectată: ${t ? t.name : 'Actualizat'}`);
+};
+
+window.openManageTemplatesModal = function() {
+  renderTemplatesListInModal();
+  const activeId = getActiveTemplateId();
+  selectTemplateForEdit(activeId);
+  openModal('manageTemplatesModal');
+};
+
+function renderTemplatesListInModal() {
+  const templates = getMessageTemplates();
+  const activeId = getActiveTemplateId();
+  const editingId = document.getElementById('editingTemplateId')?.value || activeId;
+  const container = document.getElementById('templatesListContainer');
+  if (!container) return;
+
+  container.innerHTML = templates.map(t => {
+    const isEditing = t.id === editingId;
+    const isActive = t.id === activeId;
+
+    return `
+      <div class="template-item-card ${isEditing ? 'active' : ''}" onclick="selectTemplateForEdit('${t.id}')">
+        <div class="template-item-header">
+          <strong style="font-size:0.88rem; color:var(--crm-text-main); line-height:1.3;">${escapeHTML(t.name)}</strong>
+          ${isActive ? '<span class="status-badge status-active" style="font-size:0.68rem; padding:0.15rem 0.5rem; flex-shrink:0;">Activă</span>' : ''}
+        </div>
+        <div class="template-card-preview-text">
+          ${escapeHTML(t.text)}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.selectTemplateForEdit = function(templateId) {
+  const templates = getMessageTemplates();
+  const t = templates.find(item => item.id === templateId) || templates[0];
+  if (!t) return;
+
+  const idInput = document.getElementById('editingTemplateId');
+  const nameInput = document.getElementById('editingTemplateName');
+  const textInput = document.getElementById('editingTemplateText');
+  const delBtn = document.getElementById('btnDeleteTemplate');
+
+  if (idInput) idInput.value = t.id;
+  if (nameInput) nameInput.value = t.name;
+  if (textInput) textInput.value = t.text;
+
+  if (delBtn) {
+    delBtn.style.display = templates.length > 1 ? 'inline-flex' : 'none';
+  }
+
+  renderTemplatesListInModal();
+};
+
+window.insertTagIntoTemplate = function(tag) {
+  const textarea = document.getElementById('editingTemplateText');
+  if (!textarea) return;
+  const start = textarea.selectionStart || textarea.value.length;
+  const end = textarea.selectionEnd || textarea.value.length;
+  const text = textarea.value;
+  textarea.value = text.substring(0, start) + tag + text.substring(end);
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+};
+
+window.addNewTemplatePrompt = function() {
+  const templates = getMessageTemplates();
+  const newTpl = {
+    id: 'TPL-' + Date.now().toString(36).toUpperCase(),
+    name: `Schiță Nouă ${templates.length + 1}`,
+    text: `Bună ziua {NUME}!\n\nAbonamentul dvs la X-Fitness Club expiră pe data de {DATA_EXPIRARE}.\nVă așteptăm cu drag! 🍀`
+  };
+  templates.push(newTpl);
+  saveMessageTemplates(templates);
+  setActiveTemplateId(newTpl.id);
+  populateTemplateSelects();
+  selectTemplateForEdit(newTpl.id);
+  renderFollowupTable();
+  showToast('Schiță nouă creată!');
+};
+
+window.saveCurrentEditingTemplate = function() {
+  const idInput = document.getElementById('editingTemplateId');
+  const nameInput = document.getElementById('editingTemplateName');
+  const textInput = document.getElementById('editingTemplateText');
+
+  const id = idInput?.value;
+  const name = nameInput?.value.trim() || 'Schiță Mesaj';
+  const text = textInput?.value.trim();
+
+  if (!text) {
+    alert('Introduceți textul pentru schiță.');
+    return;
+  }
+
+  let templates = getMessageTemplates();
+  const idx = templates.findIndex(t => t.id === id);
+  if (idx !== -1) {
+    templates[idx].name = name;
+    templates[idx].text = text;
+  } else {
+    templates.push({ id: id || 'TPL-' + Date.now().toString(36).toUpperCase(), name, text });
+  }
+
+  saveMessageTemplates(templates);
+  populateTemplateSelects();
+  renderTemplatesListInModal();
+  renderFollowupTable();
+  showToast('Schița a fost salvată cu succes!');
+};
+
+window.deleteCurrentEditingTemplate = function() {
+  const idInput = document.getElementById('editingTemplateId');
+  const id = idInput?.value;
+  let templates = getMessageTemplates();
+  if (templates.length <= 1) {
+    alert('Trebuie să păstrați cel puțin o schiță de mesaj în sistem.');
+    return;
+  }
+
+  if (!confirm('Sigur doriți să ștergeți această schiță?')) return;
+
+  templates = templates.filter(t => t.id !== id);
+  saveMessageTemplates(templates);
+  setActiveTemplateId(templates[0].id);
+  populateTemplateSelects();
+  selectTemplateForEdit(templates[0].id);
+  renderFollowupTable();
+  showToast('Schița a fost ștearsă.');
+};
+
+function formatPhoneForViber(phone) {
+  if (!phone) return '';
+  let clean = phone.replace(/[^0-9+]/g, '');
+  if (clean.startsWith('0') && clean.length === 9) {
+    clean = '+373' + clean.slice(1);
+  } else if (!clean.startsWith('+') && clean.startsWith('373')) {
+    clean = '+' + clean;
+  } else if (!clean.startsWith('+') && clean.length === 8) {
+    clean = '+373' + clean;
+  }
+  return clean;
+}
+
+function generateClientReminderText(client, templateId = null) {
+  if (!client) return '';
+  const templates = getMessageTemplates();
+  const activeId = templateId || getActiveTemplateId();
+  const tpl = templates.find(t => t.id === activeId) || templates[0] || DEFAULT_MESSAGE_TEMPLATES[0];
+
+  const isLimited = (client.plan || '').includes('Vizit');
+  const visitsLeft = (client.visits_left !== undefined && client.visits_left !== null) ? client.visits_left : 0;
+  const expiryStr = client.expiresDate || 'sfârșitul lunii';
+  const planStr = client.plan || 'Abonament';
+  const nameStr = client.name || 'Client';
+
+  let rawText = tpl.text;
+  
+  if (tpl.id === 'TPL-1' && !isLimited) {
+    rawText = `Bună ziua!\n\nȚinem să vă reamintim că abonamentul dvs se finiseaza pe data de {DATA_EXPIRARE} .\nVă așteptăm cu drag la antrenamente până la data expirării :)\n\nMulțumim că sunteți cu noi .\nCu multă stimă si respect echipa Xfitnessclub🍀`;
+  }
+
+  return rawText
+    .replace(/\{NUME\}/g, nameStr)
+    .replace(/\{DATA_EXPIRARE\}/g, expiryStr)
+    .replace(/\{VIZITE_RAMASE\}/g, String(visitsLeft))
+    .replace(/\{PLAN\}/g, planStr);
+}
+
+let selectedFollowupClientIds = new Set();
+
+function getFilteredFollowupClients() {
+  const clients = getClients();
+  const searchInput = document.getElementById('followupSearchInput');
+  const filterSelect = document.getElementById('followupFilterSelect');
+
+  const query = (searchInput?.value || '').toLowerCase().trim();
+  const filter = filterSelect?.value || 'ALL';
+  const now = Date.now();
+  const soonLimit = now + 7 * 24 * 60 * 60 * 1000;
+
+  return clients.filter(c => {
+    const nameMatch = (c.name || '').toLowerCase().includes(query);
+    const phoneMatch = (c.phone || '').toLowerCase().includes(query);
+    const planMatch = (c.plan || '').toLowerCase().includes(query);
+    if (!nameMatch && !phoneMatch && !planMatch) return false;
+
+    const isLimited = (c.plan || '').includes('Vizit');
+    const expiryMs = parseDateToMS(c.expiresDate);
+
+    if (filter === 'EXPIRING') {
+      return c.status === 'Activ' && expiryMs >= now && expiryMs <= soonLimit;
+    }
+    if (filter === 'VISITS') {
+      return isLimited;
+    }
+    if (filter === 'UNLIMITED') {
+      return !isLimited;
+    }
+    if (filter === 'EXPIRED') {
+      return c.status === 'Expirat' || (isLimited && c.visits_left === 0) || (expiryMs > 0 && expiryMs < now);
+    }
+    return true;
+  });
+}
+
+function renderFollowupTable() {
+  const clients = getFilteredFollowupClients();
+  const tbody = document.getElementById('followupTableBody');
+  const masterCb = document.getElementById('followupMasterCheckbox');
+
+  // Update badge in sidebar
+  const allClients = getClients();
+  const now = Date.now();
+  const soonLimit = now + 7 * 24 * 60 * 60 * 1000;
+  const expiringSoonCount = allClients.filter(c => {
+    const expMs = parseDateToMS(c.expiresDate);
+    return c.status === 'Activ' && expMs >= now && expMs <= soonLimit;
+  }).length;
+
+  const followupBadge = document.getElementById('navFollowupBadge');
+  if (followupBadge) {
+    if (expiringSoonCount > 0) {
+      followupBadge.textContent = expiringSoonCount;
+      followupBadge.style.display = 'inline-block';
+    } else {
+      followupBadge.style.display = 'none';
+    }
+  }
+
+  if (!tbody) return;
+
+  if (clients.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--crm-text-muted); padding:2rem;">Niciun client găsit conform filtrelor de follow-up selectate.</td></tr>`;
+    if (masterCb) masterCb.checked = false;
+    return;
+  }
+
+  const allSelected = clients.length > 0 && clients.every(c => selectedFollowupClientIds.has(c.id));
+  if (masterCb) masterCb.checked = allSelected;
+
+  tbody.innerHTML = clients.map(c => {
+    const isSelected = selectedFollowupClientIds.has(c.id);
+    const isLimited = (c.plan || '').includes('Vizit');
+    const visitsLeft = c.visits_left !== undefined && c.visits_left !== null ? c.visits_left : 0;
+    const total = c.total_visits_allowed || (c.plan.includes('8') ? 8 : (c.plan.includes('12') ? 12 : 1));
+
+    let balanceBadge = '';
+    if (isLimited) {
+      balanceBadge = `<span style="font-weight:700; color:var(--crm-text-main); font-size:0.8rem;">${visitsLeft} din ${total} rămase</span>`;
+    } else {
+      balanceBadge = `<span style="font-weight:700; color:var(--crm-text-main); font-size:0.8rem;">Nelimitat</span>`;
+    }
+
+    const generatedMsg = generateClientReminderText(c);
+    const msgPreviewSnippet = generatedMsg.replace(/\n+/g, ' • ');
+    const statusClass = c.status === 'Activ' ? 'status-active' : 'status-expired';
+
+    return `
+      <tr style="${isSelected ? 'background:#F1F5F9;' : ''}">
+        <td style="text-align:center;">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleFollowupClient('${c.id}', this.checked)">
+        </td>
+        <td>
+          <strong>${escapeHTML(c.name)}</strong><br>
+          <a href="tel:${c.phone.replace(/\s+/g, '')}" style="color:var(--crm-text-muted); font-size:0.78rem; text-decoration:none;">${escapeHTML(c.phone)}</a>
+        </td>
+        <td>
+          <span style="font-weight:700; color:var(--crm-red); font-size:0.82rem;">${escapeHTML(c.plan)}</span><br>
+          ${balanceBadge}
+        </td>
+        <td>
+          <span style="font-weight:700; font-size:0.82rem; color:var(--crm-text-main);">${c.expiresDate || '—'}</span>
+        </td>
+        <td>
+          <span class="status-badge ${statusClass}">${c.status}</span>
+        </td>
+        <td>
+          <div style="max-width:260px; font-size:0.75rem; color:var(--crm-text-muted); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHTML(generatedMsg)}">
+            ${escapeHTML(msgPreviewSnippet)}
+          </div>
+        </td>
+        <td style="text-align:right;">
+          <div style="display:inline-flex; gap:0.35rem; align-items:center;">
+            <button type="button" class="table-action-btn btn-viber" onclick="openSendNotificationModal('${c.id}', 'viber')" title="Trimite Notificare pe Viber">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M20.4 4.6C18.6 2.8 15.8 2 12.3 2 7.7 2 3.8 3.5 2.6 7.4c-.8 2.8-.2 5.5 1.5 7.6l-.8 3.1c-.2.8.5 1.5 1.3 1.3l3.2-.8c1.4.7 3 1.1 4.5 1.1 4.6 0 8.5-1.5 9.7-5.4 1.2-3.9.3-7.8-1.6-9.7zm-2.8 9.9c-.3.9-1.5 1.6-2.5 1.6-1.1 0-2.8-.8-4.7-2.7-1.9-1.9-2.7-3.6-2.7-4.7 0-1 .7-2.2 1.6-2.5.4-.1.8 0 1 .3l1.1 1.7c.2.4.2.8 0 1.1l-.5.7c-.2.2-.2.5 0 .7.6 1 1.4 1.8 2.4 2.4.2.2.5.2.7 0l.7-.5c.3-.2.7-.2 1.1 0l1.7 1.1c.3.3.4.7.2 1.1z"/></svg>
+              Viber
+            </button>
+            <button type="button" class="table-action-btn btn-icon-only" onclick="copyClientNotificationText('${c.id}')" title="Copiază Mesajul">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.selectFollowupGroup = function(groupType) {
+  const clients = getClients();
+  const now = Date.now();
+  const soonLimit = now + 7 * 24 * 60 * 60 * 1000;
+
+  selectedFollowupClientIds.clear();
+
+  clients.forEach(c => {
+    const isLimited = (c.plan || '').includes('Vizit');
+    const expiryMs = parseDateToMS(c.expiresDate);
+
+    if (groupType === 'VISITS') {
+      if (isLimited && c.status === 'Activ') selectedFollowupClientIds.add(c.id);
+    } else if (groupType === 'UNLIMITED') {
+      if (!isLimited && c.status === 'Activ') selectedFollowupClientIds.add(c.id);
+    } else if (groupType === 'EXPIRING') {
+      if (c.status === 'Activ' && expiryMs >= now && expiryMs <= soonLimit) selectedFollowupClientIds.add(c.id);
+    } else if (groupType === 'ALL_ACTIVE') {
+      if (c.status === 'Activ') selectedFollowupClientIds.add(c.id);
+    }
+  });
+
+  renderFollowupTable();
+  updateFollowupBatchBar();
+  showToast(`Au fost selectați ${selectedFollowupClientIds.size} clienți`);
+};
+
+window.deselectAllFollowup = function() {
+  selectedFollowupClientIds.clear();
+  renderFollowupTable();
+  updateFollowupBatchBar();
+};
+
+window.toggleFollowupSelectAll = function(isChecked) {
+  const clients = getFilteredFollowupClients();
+  if (isChecked) {
+    clients.forEach(c => selectedFollowupClientIds.add(c.id));
+  } else {
+    clients.forEach(c => selectedFollowupClientIds.delete(c.id));
+  }
+  renderFollowupTable();
+  updateFollowupBatchBar();
+};
+
+window.toggleFollowupClient = function(clientId, isChecked) {
+  if (isChecked) {
+    selectedFollowupClientIds.add(clientId);
+  } else {
+    selectedFollowupClientIds.delete(clientId);
+  }
+  renderFollowupTable();
+  updateFollowupBatchBar();
+};
+
+function updateFollowupBatchBar() {
+  const count = selectedFollowupClientIds.size;
+  const bar = document.getElementById('followupBatchBar');
+  const countBadge = document.getElementById('followupSelectedCountBadge');
+  if (countBadge) countBadge.textContent = count;
+  if (bar) {
+    if (count > 0) {
+      bar.classList.add('active');
+    } else {
+      bar.classList.remove('active');
+    }
+  }
+}
+
+// Single Client Notification Modal
+let currentNotificationClientId = null;
+
+window.openSendNotificationModal = function(clientId, defaultChannel = null) {
+  currentNotificationClientId = clientId;
+  const client = getClients().find(c => c.id === clientId);
+  if (!client) return;
+
+  const elName = document.getElementById('notifModalClientName');
+  const elPhone = document.getElementById('notifModalClientPhone');
+  const elPlan = document.getElementById('notifModalClientPlanInfo');
+  const elMsg = document.getElementById('notifModalMessageText');
+
+  const isLimited = (client.plan || '').includes('Vizit');
+  const visitsLeft = client.visits_left !== undefined && client.visits_left !== null ? client.visits_left : 0;
+  const total = client.total_visits_allowed || (client.plan.includes('8') ? 8 : (client.plan.includes('12') ? 12 : 1));
+
+  if (elName) elName.textContent = client.name;
+  if (elPhone) elPhone.textContent = client.phone;
+  if (elPlan) {
+    elPlan.textContent = isLimited
+      ? `Abonament: ${client.plan} (${visitsLeft}/${total} rămase) • Expirare: ${client.expiresDate || '—'}`
+      : `Abonament: ${client.plan} (Nelimitat) • Expirare: ${client.expiresDate || '—'}`;
+  }
+
+  if (elMsg) {
+    elMsg.value = generateClientReminderText(client);
+  }
+
+  openModal('sendClientNotificationModal');
+};
+
+window.copyNotifModalText = function() {
+  const elMsg = document.getElementById('notifModalMessageText');
+  if (!elMsg) return;
+  navigator.clipboard.writeText(elMsg.value).then(() => {
+    showToast('Mesajul a fost copiat în clipboard!');
+  }).catch(() => {
+    showToast('Mesaj copiat!');
+  });
+};
+
+window.sendNotifViaViber = function() {
+  const client = getClients().find(c => c.id === currentNotificationClientId);
+  const elMsg = document.getElementById('notifModalMessageText');
+  const text = elMsg ? elMsg.value : (client ? generateClientReminderText(client) : '');
+  const phone = client ? formatPhoneForViber(client.phone) : '';
+
+  try {
+    navigator.clipboard.writeText(text);
+  } catch (e) {}
+
+  showToast('Deschidere Viber... Textul a fost copiat în clipboard!');
+  const cleanDigits = phone.replace(/[^0-9]/g, '');
+  const viberUrl = `viber://chat?number=%2B${cleanDigits}`;
+  window.location.href = viberUrl;
+};
+
+window.copyClientNotificationText = function(clientId) {
+  const client = getClients().find(c => c.id === clientId);
+  if (!client) return;
+  const text = generateClientReminderText(client);
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(`Mesajul pentru ${client.name} a fost copiat!`);
+  }).catch(() => {
+    showToast(`Mesaj copiat!`);
+  });
+};
+
+// Double Confirmation Modal for Bulk Sending
+window.openBulkSendConfirmModal = function() {
+  if (selectedFollowupClientIds.size === 0) {
+    alert('Selectați cel puțin un client pentru trimiterea notificărilor.');
+    return;
+  }
+
+  const clients = getClients().filter(c => selectedFollowupClientIds.has(c.id));
+  const elCountText = document.getElementById('bulkConfirmCountText');
+  const elCountBadge = document.getElementById('bulkConfirmCountBadge');
+  const elList = document.getElementById('bulkConfirmListContainer');
+
+  if (elCountText) elCountText.textContent = `${clients.length} clienți`;
+  if (elCountBadge) elCountBadge.textContent = `${clients.length}`;
+
+  if (elList) {
+    elList.innerHTML = clients.map((c, idx) => `
+      <div class="double-confirm-item">
+        <div>
+          <strong>${idx + 1}. ${escapeHTML(c.name)}</strong> • <span style="color:var(--crm-text-muted);">${escapeHTML(c.phone)}</span>
+          <div style="font-size:0.75rem; color:var(--crm-red); font-weight:700;">${escapeHTML(c.plan)} (Exp: ${c.expiresDate || '—'})</div>
+        </div>
+        <div style="display:flex; gap:0.35rem;">
+          <button type="button" class="table-action-btn btn-viber btn-icon-only" onclick="openSendNotificationModal('${c.id}', 'viber')" title="Trimite Viber">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20.4 4.6C18.6 2.8 15.8 2 12.3 2 7.7 2 3.8 3.5 2.6 7.4c-.8 2.8-.2 5.5 1.5 7.6l-.8 3.1c-.2.8.5 1.5 1.3 1.3l3.2-.8c1.4.7 3 1.1 4.5 1.1 4.6 0 8.5-1.5 9.7-5.4 1.2-3.9.3-7.8-1.6-9.7zm-2.8 9.9c-.3.9-1.5 1.6-2.5 1.6-1.1 0-2.8-.8-4.7-2.7-1.9-1.9-2.7-3.6-2.7-4.7 0-1 .7-2.2 1.6-2.5.4-.1.8 0 1 .3l1.1 1.7c.2.4.2.8 0 1.1l-.5.7c-.2.2-.2.5 0 .7.6 1 1.4 1.8 2.4 2.4.2.2.5.2.7 0l.7-.5c.3-.2.7-.2 1.1 0l1.7 1.1c.3.3.4.7.2 1.1z"/></svg>
+          </button>
+          <button type="button" class="table-action-btn btn-icon-only" onclick="copyClientNotificationText('${c.id}')" title="Copiază Mesajul">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  openModal('bulkSendConfirmModal');
+};
+
+window.copyAllBulkMessages = function() {
+  const clients = getClients().filter(c => selectedFollowupClientIds.has(c.id));
+  if (clients.length === 0) return;
+
+  const fullText = clients.map((c, idx) => {
+    return `=== CLIENT ${idx + 1}: ${c.name} (${c.phone}) ===\n${generateClientReminderText(c)}\n`;
+  }).join('\n----------------------------------------\n\n');
+
+  navigator.clipboard.writeText(fullText).then(() => {
+    showToast(`Toate cele ${clients.length} mesaje au fost copiate în clipboard!`);
+  }).catch(() => {
+    showToast(`Mesaje copiate!`);
+  });
+};
+
+window.startBulkSenderQueue = function(channel = 'viber') {
+  const clients = getClients().filter(c => selectedFollowupClientIds.has(c.id));
+  if (clients.length === 0) return;
+
+  closeModal('bulkSendConfirmModal');
+  openSendNotificationModal(clients[0].id, 'viber');
+  showToast(`Deschidere notificare Viber pentru clientul: ${clients[0].name}`);
 };
 
 // =============================================================================

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/crm.css?v=2.8">
+  <link rel="stylesheet" href="css/crm.css?v=3.1">
 </head>
 <body>
 
@@ -46,7 +46,7 @@
 
   <header class="crm-header">
     <div class="crm-header-left">
-      <a href="index.html" class="crm-brand">
+      <a href="/" class="crm-brand">
         <img src="assets/logo.png" alt="X-Fitness Logo">
       </a>
       <span class="crm-badge-tag">Management Sală</span>
@@ -105,6 +105,16 @@
             </svg>
             <span>Clienți & Abonamente</span>
           </div>
+        </a>
+
+        <a href="#followup" class="crm-nav-item" data-view="viewFollowup">
+          <div class="crm-nav-item-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            <span>Follow-up</span>
+          </div>
+          <span class="crm-nav-badge" id="navFollowupBadge" style="display:none;">0</span>
         </a>
 
         <a href="#expenses" class="crm-nav-item" data-view="viewExpenses">
@@ -422,18 +432,122 @@
         </div>
       </section>
 
+      <!-- SECTIUNEA NOUA: FOLLOW-UP & NOTIFICARI VIBER -->
+      <section class="crm-view" id="viewFollowup">
+        <div class="crm-view-header">
+          <div>
+            <h1 class="crm-view-title">Follow-up & Notificări Clienți</h1>
+            <p class="crm-view-desc">Trimiterea notificărilor și reamintirilor de expirare a abonamentelor și vizitelor rămase pe Viber.</p>
+          </div>
+        </div>
+
+        <!-- Top Controls: Quick Selection Filters on Left + Message Templates on Right (Single Row) -->
+        <div class="followup-top-bar">
+          <div class="followup-quick-filters">
+            <span class="followup-filter-label">Selectare Rapidă:</span>
+            <button type="button" class="quick-filter-chip" onclick="selectFollowupGroup('VISITS')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Cu Vizite Rămase
+            </button>
+            <button type="button" class="quick-filter-chip" onclick="selectFollowupGroup('UNLIMITED')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              Nelimitate
+            </button>
+            <button type="button" class="quick-filter-chip" onclick="selectFollowupGroup('EXPIRING')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Expiră Curând (≤ 7 zile)
+            </button>
+            <button type="button" class="quick-filter-chip" onclick="selectFollowupGroup('ALL_ACTIVE')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              Toți Activi
+            </button>
+            <button type="button" class="quick-filter-chip chip-deselect" onclick="deselectAllFollowup()">
+              Deselectează
+            </button>
+          </div>
+
+          <!-- Message Templates Selector & Edit Button on the Right of the same row -->
+          <div class="followup-templates-control">
+            <div class="template-select-box" title="Selectează schița activă de mesaj">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <select id="followupActiveTemplateSelect" onchange="changeActiveTemplate(this.value)">
+                <!-- Populat dinamic prin JS -->
+              </select>
+            </div>
+            <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm btn-edit-templates" onclick="openManageTemplatesModal()" title="Adaugă sau modifică schițele de mesaje">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              Modifică Schițe
+            </button>
+          </div>
+        </div>
+
+        <!-- Sticky Batch Actions Bar -->
+        <div class="batch-actions-bar" id="followupBatchBar">
+          <div class="batch-actions-info">
+            <span class="batch-count-badge" id="followupSelectedCountBadge">0</span>
+            <span>clienți selectați pentru trimitere notificare</span>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <button type="button" class="crm-btn crm-btn-primary crm-btn-sm" onclick="openBulkSendConfirmModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              Trimite Mesaje pe Viber la Clienții Selectați
+            </button>
+          </div>
+        </div>
+
+        <div class="crm-table-wrapper">
+          <div class="crm-table-controls">
+            <div class="crm-search-box">
+              <svg class="crm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="followupSearchInput" placeholder="Caută client pentru follow-up...">
+            </div>
+
+            <select class="crm-filter-select" id="followupFilterSelect">
+              <option value="ALL">Toți Clienții</option>
+              <option value="EXPIRING">Expiră în Curând (≤ 7 zile)</option>
+              <option value="VISITS">Doar cu Număr de Vizite</option>
+              <option value="UNLIMITED">Doar Abonamente Nelimitate</option>
+              <option value="EXPIRED">Expirate / Epuizate</option>
+            </select>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th style="width:40px; text-align:center;">
+                    <input type="checkbox" id="followupMasterCheckbox" onchange="toggleFollowupSelectAll(this.checked)" title="Selectează toți">
+                  </th>
+                  <th>Client & Telefon</th>
+                  <th>Abonament & Bilanț</th>
+                  <th>Dată Expirare</th>
+                  <th>Status</th>
+                  <th>Previzualizare Notificare</th>
+                  <th style="text-align:right;">Acțiuni Trimitere</th>
+                </tr>
+              </thead>
+              <tbody id="followupTableBody">
+                <!-- Populat dinamic prin JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTIUNEA: CHELTUIELI SALA (LUNARE + PLANIFICATE) -->
       <section class="crm-view" id="viewExpenses">
         <div class="crm-view-header">
           <div>
             <h1 class="crm-view-title">Evidență Cheltuieli Sală</h1>
-            <p class="crm-view-desc">Gestiunea costurilor operaționale: salarii antrenori, arendă, utilități, mentenanță X-Line.</p>
+            <p class="crm-view-desc">Gestiunea costurilor operaționale curente: salarii, arendă, utilități și mentenanță X-Line.</p>
           </div>
           <button class="crm-btn crm-btn-primary" onclick="openModal('addExpenseModal')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Adaugă Cheltuială Nouă
+            Adaugă Cheltuială Lunară
           </button>
         </div>
 
+        <!-- 1. Cheltuieli Operative / Lunare -->
         <div class="crm-table-wrapper">
           <div class="crm-table-controls">
             <div class="crm-search-box">
@@ -443,14 +557,13 @@
 
             <select class="crm-filter-select" id="expenseCategoryFilter">
               <option value="ALL">Toate Categoriile</option>
-              
             </select>
           </div>
 
           <table class="crm-table">
             <thead>
               <tr>
-                <th>Descriere Cheltuială</th>
+                <th>Descriere Cheltuială Lunară</th>
                 <th>Categorie</th>
                 <th>Sumă (MDL)</th>
                 <th>Dată Înregistrare</th>
@@ -459,6 +572,68 @@
             </thead>
             <tbody id="allExpensesTableBody">
               
+            </tbody>
+          </table>
+        </div>
+
+        <!-- LINIE NEAGRA DREAPTA SIMPLA -->
+        <hr class="crm-expenses-straight-divider">
+
+        <!-- 2. Cheltuieli de Plan (Investitii Viitoare) -->
+        <div class="crm-view-header" style="margin-bottom: 1.25rem;">
+          <div>
+            <h2 class="crm-view-title" style="font-size: 1.35rem;">Planificare Buget & Achiziții Viitoare</h2>
+            <p class="crm-view-desc">Estimări costuri pentru proiecte viitoare: schimbare podea sală, utilaje X-Line, renovări și modernizări.</p>
+          </div>
+          <button class="crm-btn crm-btn-primary" onclick="openModal('addPlannedExpenseModal')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Adaugă Cheltuială de Plan
+          </button>
+        </div>
+
+        <!-- Planned Expenses KPI summary -->
+        <div class="planned-kpi-grid">
+          <div class="planned-kpi-card">
+            <span class="planned-kpi-title">Total Buget Planificat</span>
+            <span class="planned-kpi-val" id="plannedKpiTotal">0 Lei</span>
+          </div>
+          <div class="planned-kpi-card">
+            <span class="planned-kpi-title">În Așteptare (Planificate)</span>
+            <span class="planned-kpi-val" id="plannedKpiPending" style="color:var(--crm-yellow);">0</span>
+          </div>
+          <div class="planned-kpi-card">
+            <span class="planned-kpi-title">Realizate / Finalizate</span>
+            <span class="planned-kpi-val" id="plannedKpiDone" style="color:var(--crm-green);">0</span>
+          </div>
+        </div>
+
+        <div class="crm-table-wrapper">
+          <div class="crm-table-controls">
+            <div class="crm-search-box">
+              <svg class="crm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="plannedExpenseSearchInput" placeholder="Caută planificare (ex: schimbare podea)...">
+            </div>
+
+            <select class="crm-filter-select" id="plannedExpenseStatusFilter">
+              <option value="ALL">Toate Statusurile</option>
+              <option value="În Așteptare">În Așteptare</option>
+              <option value="Realizat">Realizate</option>
+            </select>
+          </div>
+
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>Descriere Plan / Obiectiv</th>
+                <th>Categorie</th>
+                <th>Sumă Estimată (MDL)</th>
+                <th>Dată Aproximativă Realizare</th>
+                <th>Status</th>
+                <th>Acțiuni</th>
+              </tr>
+            </thead>
+            <tbody id="plannedExpensesTableBody">
+              <!-- Populat prin JS -->
             </tbody>
           </table>
         </div>
@@ -775,8 +950,12 @@
           Adaugă Vizită din Trecut
         </button>
         <button type="button" class="history-tab-btn" onclick="showHistoryTab('tabEditPlan')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           Ajustează Abonament / Vizite
+        </button>
+        <button type="button" class="history-tab-btn" onclick="showHistoryTab('tabVisitsCalendar')" style="margin-left:auto; color:var(--crm-green); border-color:transparent;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Calendar Prezență
         </button>
       </div>
 
@@ -895,14 +1074,295 @@
         </div>
       </div>
 
+      <!-- Tab 4: Calendar Prezență Sală -->
+      <div id="tabVisitsCalendar" style="display:none;">
+        <div class="history-calendar-container">
+          <div class="history-calendar-header">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="prevHistoryCalendarMonth()" style="padding:0.35rem 0.65rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <h4 id="historyCalendarMonthTitle" style="font-family:var(--font-heading); font-size:1.1rem; font-weight:900; text-transform:uppercase; margin:0; min-width:180px; text-align:center;">
+                August 2026
+              </h4>
+              <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="nextHistoryCalendarMonth()" style="padding:0.35rem 0.65rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+
+            <div class="calendar-legend">
+              <span class="legend-item"><span class="legend-dot dot-present"></span> Prezent la sală</span>
+              <span class="legend-item"><span class="legend-dot dot-rest"></span> Zi de odihnă</span>
+            </div>
+          </div>
+
+          <!-- Calendar Days Grid -->
+          <div class="calendar-weekdays-header">
+            <div>Luni</div>
+            <div>Marți</div>
+            <div>Miercuri</div>
+            <div>Joi</div>
+            <div>Vineri</div>
+            <div>Sâmbătă</div>
+            <div>Duminică</div>
+          </div>
+
+          <div id="historyCalendarGrid" class="calendar-days-grid">
+            <!-- Populat dinamic prin JS -->
+          </div>
+
+          <!-- Selected Day Visit Details Box -->
+          <div id="historyCalendarDayDetails" class="calendar-day-details-box" style="display:none;">
+            <!-- Detalii vizite din ziua respectivă -->
+          </div>
+        </div>
+      </div>
+
       <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
         <button type="button" class="crm-btn crm-btn-secondary" data-close-crm-modal>Închide</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal 1: Adauga Cheltuiala de Plan (Investitie Viitoare) -->
+  <div class="crm-modal-backdrop" id="addPlannedExpenseModal">
+    <div class="crm-modal-card">
+      <div class="crm-modal-header">
+        <h3 class="crm-modal-title">Adaugă Cheltuială de Plan</h3>
+        <p class="crm-modal-desc">Planifică un cost viitor sau o investiție (ex: schimbare podea sală 125.000 Lei, achiziție aparate noi).</p>
+      </div>
+
+      <form id="newPlannedExpenseForm">
+        <div class="crm-form-group">
+          <label class="crm-form-label">Descriere Obiectiv / Cheltuială Planificată *</label>
+          <input type="text" id="newPlannedExpenseDesc" class="crm-form-input" placeholder="ex: Schimbare podea în toată sala de forță" required>
+        </div>
+
+        <div class="crm-form-group">
+          <label class="crm-form-label">Categorie *</label>
+          <select id="newPlannedExpenseCategory" class="crm-form-select" required>
+            <!-- Populat prin JS -->
+          </select>
+        </div>
+
+        <div class="crm-form-group" id="plannedCustomCategoryGroup" style="display:none;">
+          <label class="crm-form-label" style="color:var(--crm-red);">Nume Categorie Nouă *</label>
+          <input type="text" id="newPlannedExpenseCustomCategory" class="crm-form-input" placeholder="ex: Renovare & Modernizare">
+        </div>
+
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label class="crm-form-label">Sumă Estimată (Lei) *</label>
+            <input type="number" id="newPlannedExpenseAmount" class="crm-form-input" placeholder="ex: 125000" min="1" step="1" required>
+          </div>
+          <div class="crm-form-group">
+            <label class="crm-form-label">Dată Aproximativă Realizare *</label>
+            <input type="text" id="newPlannedExpenseDate" class="crm-form-input" placeholder="ex: 15.09.2026 sau Septembrie 2026" required>
+          </div>
+        </div>
+
+        <div class="crm-form-group">
+          <label class="crm-form-label">Status Inițial</label>
+          <select id="newPlannedExpenseStatus" class="crm-form-select">
+            <option value="În Așteptare">În Așteptare (Planificat)</option>
+            <option value="Realizat">Realizat / Finalizat</option>
+          </select>
+        </div>
+
+        <div class="crm-form-group">
+          <label class="crm-form-label">Note / Furnizor / Detalii (Opțional)</label>
+          <input type="text" id="newPlannedExpenseNotes" class="crm-form-input" placeholder="ex: Ofertă primită de la furnizor pardoseli cauciuc">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+          <button type="button" class="crm-btn crm-btn-secondary" data-close-crm-modal>Anulează</button>
+          <button type="submit" class="crm-btn crm-btn-primary">Salvează în Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Trimite Notificare Individuala Viber -->
+  <div class="crm-modal-backdrop" id="sendClientNotificationModal">
+    <div class="crm-modal-card crm-modal-card-lg">
+      <div class="crm-modal-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <h3 class="crm-modal-title">Trimite Notificare Client</h3>
+          <p class="crm-modal-desc">Reamintire expirare abonament și vizite rămase pe Viber.</p>
+        </div>
+        <button type="button" class="table-action-btn" data-close-crm-modal style="font-size:1.1rem; padding:0.4rem 0.85rem;">✕</button>
+      </div>
+
+      <div class="notif-preview-box">
+        <div class="notif-client-summary">
+          <div>
+            <strong id="notifModalClientName" style="font-size:1.05rem;">Client</strong>
+            <div style="font-size:0.8rem; color:var(--crm-text-muted);" id="notifModalClientPlanInfo">Abonament: Nelimitat 1 Lună • Expirare: 14.09.2026</div>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:0.75rem; text-transform:uppercase; color:var(--crm-text-muted); font-weight:700;">Telefon</span>
+            <div style="font-weight:800; color:var(--crm-text-main);" id="notifModalClientPhone">069 000 000</div>
+          </div>
+        </div>
+
+        <div class="crm-form-group" style="margin-bottom:0.75rem;">
+          <label class="crm-form-label" style="display:flex; justify-content:space-between;">
+            <span>Conținutul Mesajului (Editabil)</span>
+            <span style="color:var(--crm-text-muted); text-transform:none; font-weight:600;">Personalizat conform schiței active</span>
+          </label>
+          <textarea id="notifModalMessageText" class="notif-textarea"></textarea>
+        </div>
+
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:flex-end;">
+          <button type="button" class="crm-btn crm-btn-secondary" onclick="copyNotifModalText()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copiază Textul
+          </button>
+          <button type="button" class="crm-btn crm-btn-viber" onclick="sendNotifViaViber()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M20.4 4.6C18.6 2.8 15.8 2 12.3 2 7.7 2 3.8 3.5 2.6 7.4c-.8 2.8-.2 5.5 1.5 7.6l-.8 3.1c-.2.8.5 1.5 1.3 1.3l3.2-.8c1.4.7 3 1.1 4.5 1.1 4.6 0 8.5-1.5 9.7-5.4 1.2-3.9.3-7.8-1.6-9.7zm-2.8 9.9c-.3.9-1.5 1.6-2.5 1.6-1.1 0-2.8-.8-4.7-2.7-1.9-1.9-2.7-3.6-2.7-4.7 0-1 .7-2.2 1.6-2.5.4-.1.8 0 1 .3l1.1 1.7c.2.4.2.8 0 1.1l-.5.7c-.2.2-.2.5 0 .7.6 1 1.4 1.8 2.4 2.4.2.2.5.2.7 0l.7-.5c.3-.2.7-.2 1.1 0l1.7 1.1c.3.3.4.7.2 1.1z"/>
+            </svg>
+            Deschide Viber
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Confirmare Dubla Trimitere Notificari in Masa -->
+  <div class="crm-modal-backdrop" id="bulkSendConfirmModal">
+    <div class="crm-modal-card crm-modal-card-lg">
+      <div class="crm-modal-header">
+        <h3 class="crm-modal-title" style="color:var(--crm-red);">Confirmare Dublă Administrator</h3>
+        <p class="crm-modal-desc">Verifică lista clienților înainte de lansarea mesajelor de notificare pe Viber.</p>
+      </div>
+
+      <div class="double-confirm-warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" style="color:var(--crm-red); flex-shrink:0;">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <div>
+          <strong>Atenție administrator:</strong> Urmează să trimiteți notificări către <strong id="bulkConfirmCountText">0 clienți</strong>. Fiecare mesaj conține automat datele personalizate conform schiței selectate.
+        </div>
+      </div>
+
+      <div class="crm-form-group">
+        <label class="crm-form-label">Listă Clienți Destinatari (<span id="bulkConfirmCountBadge">0</span>)</label>
+        <div class="double-confirm-list" id="bulkConfirmListContainer">
+          <!-- Populat prin JS -->
+        </div>
+      </div>
+
+      <!-- Quick Launch Queue Area -->
+      <div id="bulkQueueArea" style="background:#F8FAFC; border:1px solid var(--crm-border); border-radius:10px; padding:1rem; margin-bottom:1.25rem;">
+        <div style="font-size:0.82rem; font-weight:800; text-transform:uppercase; margin-bottom:0.6rem; color:var(--crm-text-main);">
+          Opțiuni de Trimitere
+        </div>
+        <p style="font-size:0.82rem; color:var(--crm-text-muted); margin-bottom:0.85rem;">
+          Puteți lansa chat-ul Viber secvențial pentru fiecare client sau puteți copia toate mesajele formatate dintr-un singur click.
+        </p>
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+          <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="copyAllBulkMessages()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copiază Toate Mesajele Generate
+          </button>
+          <button type="button" class="crm-btn crm-btn-viber crm-btn-sm" onclick="startBulkSenderQueue('viber')">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M20.4 4.6C18.6 2.8 15.8 2 12.3 2 7.7 2 3.8 3.5 2.6 7.4c-.8 2.8-.2 5.5 1.5 7.6l-.8 3.1c-.2.8.5 1.5 1.3 1.3l3.2-.8c1.4.7 3 1.1 4.5 1.1 4.6 0 8.5-1.5 9.7-5.4 1.2-3.9.3-7.8-1.6-9.7zm-2.8 9.9c-.3.9-1.5 1.6-2.5 1.6-1.1 0-2.8-.8-4.7-2.7-1.9-1.9-2.7-3.6-2.7-4.7 0-1 .7-2.2 1.6-2.5.4-.1.8 0 1 .3l1.1 1.7c.2.4.2.8 0 1.1l-.5.7c-.2.2-.2.5 0 .7.6 1 1.4 1.8 2.4 2.4.2.2.5.2.7 0l.7-.5c.3-.2.7-.2 1.1 0l1.7 1.1c.3.3.4.7.2 1.1z"/></svg>
+            Deschide Coada pe Viber (Pas cu Pas)
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+        <button type="button" class="crm-btn crm-btn-secondary" data-close-crm-modal>Închide</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Gestionare & Modificare Schite Mesaje Follow-up -->
+  <!-- Modal: Gestionare Schițe Mesaje Follow-up (Spacious) -->
+  <div class="crm-modal-backdrop" id="manageTemplatesModal">
+    <div class="crm-modal-card" style="max-width:1120px !important; width:95vw !important; padding:2.25rem 2.5rem !important;">
+      <div class="crm-modal-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem;">
+        <div>
+          <h3 class="crm-modal-title" style="font-size:1.45rem;">Gestionare Schițe Mesaje Follow-up</h3>
+          <p class="crm-modal-desc" style="font-size:0.88rem; margin-top:0.25rem;">Adaugă, personalizează sau modifică șabloanele de mesaje folosite pentru trimiterea notificărilor pe Viber.</p>
+        </div>
+        <button type="button" class="table-action-btn" data-close-crm-modal style="font-size:1.1rem; padding:0.4rem 0.85rem;">✕</button>
+      </div>
+
+      <div class="manage-templates-grid">
+        <!-- Left: List of Templates -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+            <label class="crm-form-label" style="margin:0; font-size:0.8rem;">Schițe Salvate</label>
+            <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" onclick="addNewTemplatePrompt()" style="font-size:0.76rem; padding:0.3rem 0.75rem; font-weight:800;">
+              + Schiță Nouă
+            </button>
+          </div>
+          <div id="templatesListContainer">
+            <!-- Populat prin JS -->
+          </div>
+        </div>
+
+        <!-- Right: Editor Area -->
+        <div class="template-editor-box">
+          <input type="hidden" id="editingTemplateId" value="">
+          
+          <div class="crm-form-group" style="margin-bottom:1.25rem;">
+            <label class="crm-form-label">Denumire Schiță *</label>
+            <input type="text" id="editingTemplateName" class="crm-form-input" placeholder="ex: Schița 1: Expirare & Vizite" required style="font-weight:700; font-size:0.92rem;">
+          </div>
+
+          <div class="crm-form-group" style="margin-bottom:0.75rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem;">
+              <label class="crm-form-label" style="margin:0;">Text Mesaj *</label>
+              <span style="font-size:0.75rem; color:var(--crm-text-muted);">Inserează tag-uri dinamice:</span>
+            </div>
+            <!-- Insert dynamic tags buttons -->
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.65rem;">
+              <button type="button" class="template-tag-chip" onclick="insertTagIntoTemplate('{NUME}')">{NUME}</button>
+              <button type="button" class="template-tag-chip" onclick="insertTagIntoTemplate('{DATA_EXPIRARE}')">{DATA_EXPIRARE}</button>
+              <button type="button" class="template-tag-chip" onclick="insertTagIntoTemplate('{VIZITE_RAMASE}')">{VIZITE_RAMASE}</button>
+              <button type="button" class="template-tag-chip" onclick="insertTagIntoTemplate('{PLAN}')">{PLAN}</button>
+            </div>
+            <textarea id="editingTemplateText" class="notif-textarea" placeholder="Scrieți textul schiței aici..."></textarea>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;">
+            <button type="button" class="crm-btn crm-btn-secondary crm-btn-sm" id="btnDeleteTemplate" onclick="deleteCurrentEditingTemplate()" style="color:var(--crm-red); font-weight:800; padding:0.45rem 1rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Șterge
+            </button>
+            <button type="button" class="crm-btn crm-btn-primary" onclick="saveCurrentEditingTemplate()" style="font-weight:900; padding:0.55rem 1.4rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              Salvează Schița
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+        <button type="button" class="crm-btn crm-btn-secondary" data-close-crm-modal style="padding:0.5rem 1.5rem;">Închide</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast feedback container -->
+  <div id="crmToast" class="crm-toast">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18" style="color:var(--crm-green);">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span id="crmToastMessage">Acțiune efectuată cu succes!</span>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=2.8"></script>
-  <script src="js/crm.js?v=2.8"></script>
+  <script src="js/supabase-client.js?v=2.9"></script>
+  <script src="js/crm.js?v=2.9"></script>
 </body>
 </html>

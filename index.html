@@ -11,6 +11,17 @@
   <meta name="author" content="X-Fitness Club">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://x-fitness.md/">
+  <script>
+    (function() {
+      try {
+        var path = window.location.pathname;
+        if (path.endsWith('/index.html') || path.endsWith('/index') || path.endsWith('/home')) {
+          var cleanPath = path.replace(/\/(index(\.html)?|home)$/, '') || '/';
+          window.history.replaceState(null, '', cleanPath + window.location.search + window.location.hash);
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://x-fitness.md/">

@@ -247,6 +247,54 @@ async function dbDeleteCategory(name) {
   }
 }
 
+async function dbGetPlannedExpenses() {
+  if (!db) return null;
+  try {
+    const { data, error } = await db.from('planned_expenses').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.warn('Supabase fetch planned expenses failed:', err);
+    return null;
+  }
+}
+
+async function dbInsertPlannedExpense(expenseData) {
+  if (!db) return null;
+  try {
+    const { data, error } = await db.from('planned_expenses').insert([expenseData]).select();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.warn('Supabase insert planned expense failed:', err);
+    return null;
+  }
+}
+
+async function dbUpdatePlannedExpense(id, updates) {
+  if (!db) return null;
+  try {
+    const { data, error } = await db.from('planned_expenses').update(updates).eq('id', id).select();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.warn('Supabase update planned expense failed:', err);
+    return null;
+  }
+}
+
+async function dbDeletePlannedExpense(id) {
+  if (!db) return null;
+  try {
+    const { error } = await db.from('planned_expenses').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete planned expense failed:', err);
+    return false;
+  }
+}
+
 window.dbClient = {
   db,
   insertLead: dbInsertLead,
@@ -263,6 +311,10 @@ window.dbClient = {
   getExpenses: dbGetExpenses,
   insertExpense: dbInsertExpense,
   deleteExpense: dbDeleteExpense,
+  getPlannedExpenses: dbGetPlannedExpenses,
+  insertPlannedExpense: dbInsertPlannedExpense,
+  updatePlannedExpense: dbUpdatePlannedExpense,
+  deletePlannedExpense: dbDeletePlannedExpense,
   getPricing: dbGetPricing,
   savePricing: dbSavePricing,
   getCategories: dbGetCategories,
