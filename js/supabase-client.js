@@ -1,6 +1,6 @@
 const SUPABASE_CONFIG = {
-  url: 'https://dciagxybjrgnxxxgcwaa.supabase.co',
-  anonKey: 'sb_publishable_lt9FbJIaa3o7lzz_DcPUoA_Sh9IKIo7'
+  url: 'https://jdcvtroezvtfmqgkwmlb.supabase.co',
+  anonKey: 'sb_publishable_b8FnfF48bJl4qDpv10bdug_b3lZXJ2M'
 };
 
 let db = null;
