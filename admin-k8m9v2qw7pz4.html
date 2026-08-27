@@ -11,22 +11,22 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/crm.css?v=3.1">
+  <link rel="stylesheet" href="css/crm.min.css?v=3.2">
 </head>
 <body>
 
   <div class="auth-lock-screen" id="authLockScreen">
     <div class="auth-card">
       <div class="auth-logo">
-        <img src="assets/logo.red.png" alt="X-Fitness Club Logo">
+        <img src="assets/logo.red.webp" alt="X-Fitness Club Logo">
       </div>
       <h2 class="auth-title">Acces Securizat CRM</h2>
       <p class="auth-subtitle">Introdu datele de autentificare ale conducerii sălii.</p>
 
       <form class="auth-form" id="authForm">
         <div class="auth-form-group">
-          <label class="auth-label" for="authUsername">Nume Utilizator (Username)</label>
-          <input type="text" id="authUsername" class="auth-input" placeholder="xclub" required autofocus autocomplete="username">
+          <label class="auth-label" for="authUsername">Email Administrator / Utilizator</label>
+          <input type="text" id="authUsername" class="auth-input" placeholder="admin@x-fitness.md sau xclub" required autofocus autocomplete="username">
         </div>
 
         <div class="auth-form-group">
@@ -47,7 +47,7 @@
   <header class="crm-header">
     <div class="crm-header-left">
       <a href="/" class="crm-brand">
-        <img src="assets/logo.png" alt="X-Fitness Logo">
+        <img src="assets/logo.webp" alt="X-Fitness Logo">
       </a>
       <span class="crm-badge-tag">Management Sală</span>
     </div>
@@ -1362,7 +1362,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=2.9"></script>
-  <script src="js/crm.js?v=2.9"></script>
+  <script src="js/supabase-client.min.js?v=3.2"></script>
+  <script src="js/crm.min.js?v=3.2"></script>
 </body>
 </html>

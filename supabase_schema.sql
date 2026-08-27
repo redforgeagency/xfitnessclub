@@ -117,49 +117,92 @@ INSERT INTO public.custom_categories (name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- ==========================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
+-- ==========================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES - SECURED PRODUCTION ARCHITECTURE
 -- ==========================================================================
 
--- Enable RLS on all tables
+-- 1. Enable RLS on all tables
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.planned_expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.custom_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pricing_config ENABLE ROW LEVEL SECURITY;
 
--- Leads Policies (Website can insert, CRM can manage all)
-DROP POLICY IF EXISTS "Public can insert leads" ON public.leads;
-CREATE POLICY "Public can insert leads" ON public.leads FOR INSERT WITH CHECK (true);
-
+-- 2. Drop all insecure legacy policies
 DROP POLICY IF EXISTS "Anon full access to leads" ON public.leads;
-CREATE POLICY "Anon full access to leads" ON public.leads FOR ALL USING (true) WITH CHECK (true);
-
--- Clients & Visits Policies
+DROP POLICY IF EXISTS "Public can insert leads" ON public.leads;
 DROP POLICY IF EXISTS "Anon full access to clients" ON public.clients;
-CREATE POLICY "Anon full access to clients" ON public.clients FOR ALL USING (true) WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Anon full access to visits" ON public.visits;
-CREATE POLICY "Anon full access to visits" ON public.visits FOR ALL USING (true) WITH CHECK (true);
-
--- Expenses Policies
-ALTER TABLE public.planned_expenses ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Anon full access to expenses" ON public.expenses;
-CREATE POLICY "Anon full access to expenses" ON public.expenses FOR ALL USING (true) WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Anon full access to planned_expenses" ON public.planned_expenses;
-CREATE POLICY "Anon full access to planned_expenses" ON public.planned_expenses FOR ALL USING (true) WITH CHECK (true);
-
--- Categories Policies
 DROP POLICY IF EXISTS "Anon full access to categories" ON public.custom_categories;
-CREATE POLICY "Anon full access to categories" ON public.custom_categories FOR ALL USING (true) WITH CHECK (true);
-
--- Pricing Policies
-DROP POLICY IF EXISTS "Public can read pricing" ON public.pricing_config;
-CREATE POLICY "Public can read pricing" ON public.pricing_config FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Anon can update pricing" ON public.pricing_config;
-CREATE POLICY "Anon can update pricing" ON public.pricing_config FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public can read pricing" ON public.pricing_config;
 
--- Enable Realtime (optional, for live updates)
+-- 3. LEADS POLICIES:
+-- Public visitors (anon) can ONLY INSERT new leads with strict validation checks.
+-- Reading, updating, and deleting leads by the public is STRICTLY FORBIDDEN.
+CREATE POLICY "Public anon can only insert valid leads" ON public.leads
+    FOR INSERT TO anon
+    WITH CHECK (
+        status = 'Nou' AND
+        length(name) >= 2 AND length(name) <= 100 AND
+        length(phone) >= 6 AND length(phone) <= 30 AND
+        length(COALESCE(details, '')) <= 1500
+    );
+
+-- Authenticated Club Admins have full access to view, update status, and manage leads
+CREATE POLICY "Authenticated admins full access to leads" ON public.leads
+    FOR ALL TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+-- 4. CLIENTS & VISITS POLICIES:
+-- Public has ZERO access. Only authenticated gym managers can view/manage clients and attendance.
+CREATE POLICY "Authenticated admins full access to clients" ON public.clients
+    FOR ALL TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+CREATE POLICY "Authenticated admins full access to visits" ON public.visits
+    FOR ALL TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+-- 5. FINANCIAL & EXPENSES POLICIES:
+-- Public has ZERO access to financial records.
+CREATE POLICY "Authenticated admins full access to expenses" ON public.expenses
+    FOR ALL TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+CREATE POLICY "Authenticated admins full access to planned_expenses" ON public.planned_expenses
+    FOR ALL TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+-- 6. CATEGORIES & PRICING POLICIES:
+-- Public can read active pricing and categories (for site display), but CANNOT modify them.
+CREATE POLICY "Public read pricing" ON public.pricing_config
+    FOR SELECT TO anon, authenticated
+    USING (true);
+
+CREATE POLICY "Authenticated admins manage pricing" ON public.pricing_config
+    FOR ALL TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+CREATE POLICY "Public read categories" ON public.custom_categories
+    FOR SELECT TO anon, authenticated
+    USING (true);
+
+CREATE POLICY "Authenticated admins manage categories" ON public.custom_categories
+    FOR ALL TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+-- Enable Realtime for authenticated administrative dashboard
 ALTER PUBLICATION supabase_realtime ADD TABLE public.leads, public.clients, public.visits, public.expenses, public.planned_expenses, public.pricing_config;
+

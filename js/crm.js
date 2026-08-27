@@ -1,14 +1,14 @@
 const CRM_CONFIG = {
-  AUTH_USER: 'xclub',
-  AUTH_PASS: 'k8M#v9Qz!2Xw$7pL',
-  SESSION_KEY: 'xfitness_auth_token_2026'
+  SESSION_KEY: 'xfitness_auth_token_2026',
+  // SHA-256 hash of emergency offline credentials (no plaintext in bundle)
+  FALLBACK_HASH: '6d2081d790d81883c2fa362dc825f6a43c75eb46e5d18f0ad506cc00493099ef'
 };
 
 let tempPastDates = [];
 let currentActiveHistoryClientId = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  initAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  await initAuth();
   initCRMData();
   initNavigation();
   initModals();
@@ -18,13 +18,21 @@ document.addEventListener('DOMContentLoaded', () => {
   syncFromSupabase();
 });
 
-function initAuth() {
+async function initAuth() {
   const lockScreen = document.getElementById('authLockScreen');
   const authForm = document.getElementById('authForm');
   const authError = document.getElementById('authError');
   const logoutBtn = document.getElementById('crmLogoutBtn');
 
-  const isAuthenticated = sessionStorage.getItem(CRM_CONFIG.SESSION_KEY) === 'authenticated';
+  // Check existing session (Supabase Auth session or session token)
+  let isAuthenticated = sessionStorage.getItem(CRM_CONFIG.SESSION_KEY) === 'authenticated';
+  if (!isAuthenticated && window.dbClient?.auth?.getSession) {
+    const session = await window.dbClient.auth.getSession();
+    if (session) {
+      isAuthenticated = true;
+      sessionStorage.setItem(CRM_CONFIG.SESSION_KEY, 'authenticated');
+    }
+  }
 
   if (isAuthenticated) {
     if (lockScreen) lockScreen.classList.add('hidden');
@@ -33,12 +41,52 @@ function initAuth() {
   }
 
   if (authForm) {
-    authForm.addEventListener('submit', (e) => {
+    authForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const user = document.getElementById('authUsername')?.value.trim();
-      const pass = document.getElementById('authPassword')?.value;
+      const submitBtn = authForm.querySelector('button[type="submit"]');
+      const origBtnContent = submitBtn ? submitBtn.innerHTML : 'Autentificare';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Se verifică accesul...';
+      }
 
-      if (user === CRM_CONFIG.AUTH_USER && pass === CRM_CONFIG.AUTH_PASS) {
+      const user = document.getElementById('authUsername')?.value.trim() || '';
+      const pass = document.getElementById('authPassword')?.value || '';
+
+      let authenticated = false;
+
+      // 1. Authenticate against Supabase Auth (Production RLS unlock)
+      if (window.dbClient?.auth?.signIn && user.includes('@')) {
+        try {
+          const { data, error } = await window.dbClient.auth.signIn(user, pass);
+          if (data && data.session) {
+            authenticated = true;
+          }
+        } catch (err) {
+          console.warn('Supabase Auth error:', err);
+        }
+      }
+
+      // 2. Fallback check via Web Crypto API SHA-256
+      if (!authenticated) {
+        try {
+          const encoder = new TextEncoder();
+          const hashBuf = await crypto.subtle.digest('SHA-256', encoder.encode(user + ':' + pass));
+          const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+          if (hashHex === CRM_CONFIG.FALLBACK_HASH) {
+            authenticated = true;
+          }
+        } catch (e) {
+          console.error('Crypto error:', e);
+        }
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnContent;
+      }
+
+      if (authenticated) {
         sessionStorage.setItem(CRM_CONFIG.SESSION_KEY, 'authenticated');
         if (authError) authError.style.display = 'none';
         if (lockScreen) lockScreen.classList.add('hidden');
@@ -46,7 +94,7 @@ function initAuth() {
         syncFromSupabase();
       } else {
         if (authError) {
-          authError.textContent = 'Date de autentificare incorecte. Verifică utilizatorul și parola.';
+          authError.textContent = 'Date de autentificare incorecte. Verifică email-ul / utilizatorul și parola.';
           authError.style.display = 'block';
         }
       }
@@ -54,7 +102,10 @@ function initAuth() {
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', async () => {
+      if (window.dbClient?.auth?.signOut) {
+        try { await window.dbClient.auth.signOut(); } catch (e) {}
+      }
       sessionStorage.removeItem(CRM_CONFIG.SESSION_KEY);
       if (lockScreen) lockScreen.classList.remove('hidden');
       const authUser = document.getElementById('authUsername');

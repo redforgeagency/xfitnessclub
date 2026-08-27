@@ -432,12 +432,149 @@ function openBookingModal(planName = 'Antrenament de Probă') {
   }
 }
 
+function sanitizeInput(str, maxLen = 100) {
+  if (!str || typeof str !== 'string') return '';
+  let cleaned = str.replace(/<[^>]*>?/gm, '');
+  cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  return cleaned.trim().slice(0, maxLen);
+}
+
+function validateName(name) {
+  const clean = sanitizeInput(name, 60);
+  const nameRegex = /^[A-Za-zĂÂÎȘȚăâîșț\s\-\.']{2,60}$/;
+  if (!nameRegex.test(clean)) {
+    return { valid: false, error: 'Te rugăm să introduci un nume valid (minim 2 litere, fără caractere speciale).' };
+  }
+  return { valid: true, value: clean };
+}
+
+function validatePhone(phone) {
+  const clean = sanitizeInput(phone, 25);
+  const digitsOnly = clean.replace(/\D/g, '');
+  if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+    return { valid: false, error: 'Te rugăm să introduci un număr de telefon valid (ex: 069 123 456 sau +373 69 123 456).' };
+  }
+  return { valid: true, value: clean };
+}
+
+function checkRateLimit() {
+  const now = Date.now();
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem('xf_lead_submits') || '[]');
+  } catch (e) {
+    history = [];
+  }
+  const recent = history.filter(t => now - t < 300000); // 5 min
+  if (recent.length >= 4) {
+    return false;
+  }
+  recent.push(now);
+  try {
+    localStorage.setItem('xf_lead_submits', JSON.stringify(recent));
+  } catch (e) {}
+  return true;
+}
+
 function initContactForms() {
   const forms = document.querySelectorAll('.ajax-form');
 
   forms.forEach(form => {
+    let formStartTime = Date.now();
+
+    // Form input formatting for phone numbers
+    const phoneInputs = form.querySelectorAll('input[type="tel"]');
+    phoneInputs.forEach(input => {
+      input.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9+\s\-()]/g, '').slice(0, 20);
+        e.target.style.borderColor = '';
+      });
+      input.addEventListener('focus', () => {
+        if (!formStartTime) formStartTime = Date.now();
+      });
+    });
+
+    const nameInputs = form.querySelectorAll('input[type="text"]:not([name="x_hp_check"])');
+    nameInputs.forEach(input => {
+      input.addEventListener('input', (e) => {
+        e.target.style.borderColor = '';
+      });
+      input.addEventListener('focus', () => {
+        if (!formStartTime) formStartTime = Date.now();
+      });
+    });
+
     form.addEventListener('submit', function(e) {
       e.preventDefault();
+
+      // 1. Honeypot check (hidden field filled by bots)
+      const hpVal = form.querySelector('input[name="x_hp_check"]')?.value;
+      if (hpVal) {
+        // Silently drop bot submission
+        form.reset();
+        showToast('Cererea a fost trimisă cu succes.');
+        return;
+      }
+
+      // 2. Time-to-fill check (bots submit instantaneously)
+      const timeSpent = Date.now() - formStartTime;
+      if (timeSpent < 1200) {
+        form.reset();
+        showToast('Cererea a fost înregistrată.');
+        return;
+      }
+
+      // 3. Rate limiting check (max 4 per 5 minutes per user)
+      if (!checkRateLimit()) {
+        showToast('Ai trimis deja mai multe cereri recent. Te rugăm să aștepți câteva minute înainte de a reîncerca.', 'warning');
+        return;
+      }
+
+      // 4. Input Extraction & Strict Validation
+      let rawName = '';
+      let rawPhone = '';
+      let rawPlan = 'Antrenament de Probă';
+      let rawDetails = '';
+      let nameField = null;
+      let phoneField = null;
+
+      if (form.id === 'bookingForm') {
+        nameField = document.getElementById('bookName');
+        phoneField = document.getElementById('bookPhone');
+        rawName = nameField?.value || '';
+        rawPhone = phoneField?.value || '';
+        rawPlan = document.getElementById('modalSelectedPlan')?.value || 'Antrenament de Probă';
+        rawDetails = 'Interval: ' + (document.getElementById('bookPreferredTime')?.value || 'Seara');
+      } else if (form.id === 'mainContactForm') {
+        nameField = document.getElementById('contactName');
+        phoneField = document.getElementById('contactPhone');
+        rawName = nameField?.value || '';
+        rawPhone = phoneField?.value || '';
+        rawPlan = document.getElementById('contactInterest')?.value || 'Contact General';
+        rawDetails = document.getElementById('contactMessage')?.value || 'Fără mesaj specific';
+      }
+
+      // Validate Name
+      const nameCheck = validateName(rawName);
+      if (!nameCheck.valid) {
+        if (nameField) {
+          nameField.style.borderColor = '#FF3D49';
+          nameField.focus();
+        }
+        showToast(nameCheck.error, 'error');
+        return;
+      }
+
+      // Validate Phone
+      const phoneCheck = validatePhone(rawPhone);
+      if (!phoneCheck.valid) {
+        if (phoneField) {
+          phoneField.style.borderColor = '#FF3D49';
+          phoneField.focus();
+        }
+        showToast(phoneCheck.error, 'error');
+        return;
+      }
 
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalText = submitBtn ? submitBtn.innerHTML : 'Trimite';
@@ -453,34 +590,21 @@ function initContactForms() {
         `;
       }
 
-      let leadData = {
-        id: 'LEAD-' + Date.now().toString(36).toUpperCase(),
+      const cleanName = nameCheck.value;
+      const cleanPhone = phoneCheck.value;
+      const cleanPlan = sanitizeInput(rawPlan, 60);
+      const cleanDetails = sanitizeInput(rawDetails, 500);
+
+      const leadData = {
+        id: 'LEAD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase(),
         date: new Date().toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        name: cleanName,
+        phone: cleanPhone,
+        plan: cleanPlan,
+        details: cleanDetails,
         status: 'Nou',
         source: 'Website'
       };
-
-      const hpVal = form.querySelector('input[name="x_hp_check"]')?.value;
-      if (hpVal) {
-        setTimeout(() => {
-          if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalText; }
-          form.reset();
-          showToast('Mulțumim! Cererea a fost înregistrată cu succes.');
-        }, 400);
-        return;
-      }
-
-      if (form.id === 'bookingForm') {
-        leadData.name = escapeHTML(document.getElementById('bookName')?.value || 'Client Nou');
-        leadData.phone = escapeHTML(document.getElementById('bookPhone')?.value || '');
-        leadData.plan = escapeHTML(document.getElementById('modalSelectedPlan')?.value || 'General');
-        leadData.details = escapeHTML('Orar: ' + (document.getElementById('bookPreferredTime')?.value || 'Seara'));
-      } else if (form.id === 'mainContactForm') {
-        leadData.name = escapeHTML(document.getElementById('contactName')?.value || 'Client Nou');
-        leadData.phone = escapeHTML(document.getElementById('contactPhone')?.value || '');
-        leadData.plan = escapeHTML(document.getElementById('contactInterest')?.value || 'Contact General');
-        leadData.details = escapeHTML(document.getElementById('contactMessage')?.value || 'Fără mesaj specific');
-      }
 
       try {
         const existingLeads = JSON.parse(localStorage.getItem('xfitness_leads') || '[]');
@@ -507,14 +631,15 @@ function initContactForms() {
         }
 
         form.reset();
+        formStartTime = Date.now();
 
-        showToast('Mulțumim! Cererea a fost înregistrată cu succes. Te vom contacta în curând.');
-      }, 600);
+        showToast('Mulțumim! Cererea a fost înregistrată cu succes. Te vom contacta în cel mai scurt timp.');
+      }, 500);
     });
   });
 }
 
-function showToast(message) {
+function showToast(message, type = 'success') {
   let toast = document.getElementById('toastNotification');
   if (!toast) {
     toast = document.createElement('div');
@@ -523,14 +648,19 @@ function showToast(message) {
     document.body.appendChild(toast);
   }
 
+  const isError = type === 'error';
+  const isWarning = type === 'warning';
+  const iconColor = isError ? '#FF3D49' : (isWarning ? '#F59E0B' : '#10B981');
+  const iconSvg = isError 
+    ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF3D49" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>'
+    : (isWarning 
+        ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
+        : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#10B981" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+      );
+
   toast.innerHTML = `
-    <div class="toast-icon">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-      </svg>
-    </div>
-    <div class="toast-text">${message}</div>
+    <div class="toast-icon">${iconSvg}</div>
+    <div class="toast-text" style="${isError ? 'color:#FFA3A8;' : ''}">${escapeHTML(message)}</div>
   `;
 
   toast.classList.add('show');

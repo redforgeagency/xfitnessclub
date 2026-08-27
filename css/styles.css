@@ -1314,7 +1314,7 @@ textarea.form-control {
 .calc-results-container {
   position: relative;
   background: linear-gradient(180deg, rgba(16, 19, 24, 0.90) 0%, rgba(11, 13, 16, 0.96) 100%),
-    url('../assets/ritae-rice-2103481_1280.jpg') center/cover no-repeat;
+    url('../assets/ritae-rice-2103481_1280.webp') center/cover no-repeat;
   padding: 2rem 2.25rem;
   color: #FFFFFF;
   display: flex;

@@ -5,12 +5,48 @@ const SUPABASE_CONFIG = {
 
 let db = null;
 
-if (typeof supabase !== 'undefined' && supabase.createClient) {
-  try {
-    db = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-  } catch (err) {
-    console.error('Supabase init error:', err);
+function initSupabaseInstance() {
+  if (typeof supabase !== 'undefined' && supabase.createClient) {
+    try {
+      const savedConfig = localStorage.getItem('xfitness_supabase_custom_config');
+      const activeConfig = savedConfig ? JSON.parse(savedConfig) : SUPABASE_CONFIG;
+      db = supabase.createClient(activeConfig.url, activeConfig.anonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true
+        }
+      });
+    } catch (err) {
+      console.error('Supabase init error:', err);
+    }
   }
+}
+
+initSupabaseInstance();
+
+async function dbSignIn(email, password) {
+  if (!db || !db.auth) return { data: null, error: { message: 'Clientul Supabase nu este inițializat' } };
+  return await db.auth.signInWithPassword({ email: email.trim(), password });
+}
+
+async function dbSignOut() {
+  if (!db || !db.auth) return;
+  return await db.auth.signOut();
+}
+
+async function dbGetSession() {
+  if (!db || !db.auth) return null;
+  try {
+    const { data } = await db.auth.getSession();
+    return data?.session || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function dbOnAuthStateChange(callback) {
+  if (!db || !db.auth) return null;
+  return db.auth.onAuthStateChange(callback);
 }
 
 async function dbInsertLead(leadData) {
@@ -296,7 +332,21 @@ async function dbDeletePlannedExpense(id) {
 }
 
 window.dbClient = {
-  db,
+  get db() { return db; },
+  auth: {
+    signIn: dbSignIn,
+    signOut: dbSignOut,
+    getSession: dbGetSession,
+    onAuthStateChange: dbOnAuthStateChange
+  },
+  setConfig: function(url, anonKey) {
+    localStorage.setItem('xfitness_supabase_custom_config', JSON.stringify({ url: url.trim(), anonKey: anonKey.trim() }));
+    initSupabaseInstance();
+  },
+  getConfig: function() {
+    const saved = localStorage.getItem('xfitness_supabase_custom_config');
+    return saved ? JSON.parse(saved) : SUPABASE_CONFIG;
+  },
   insertLead: dbInsertLead,
   getLeads: dbGetLeads,
   updateLeadStatus: dbUpdateLeadStatus,
