@@ -2463,17 +2463,17 @@ const DEFAULT_MESSAGE_TEMPLATES = [
   {
     id: 'TPL-1',
     name: 'Schița 1: Expirare & Vizite (Standard)',
-    text: `Bună ziua!\n\nȚinem să vă reamintim că abonamentul dvs se finiseaza pe data de {DATA_EXPIRARE}\nMai aveti {VIZITE_RAMASE} vizite de executat .\n\nVă rugăm să le indepliniți până la data expirarii :)\n\nMulțumim că sunteți cu noi .\nCu multă stimă si respect echipa Xfitnessclub🍀`
+    text: `Bună ziua!\n\nȚinem să vă reamintim că abonamentul dvs se finiseaza pe data de {DATA_EXPIRARE}\nMai aveti {VIZITE_RAMASE} vizite de executat .\n\nVă rugăm să le indepliniți până la data expirarii :)\n\nMulțumim că sunteți cu noi .\nCu multă stimă si respect echipa Xfitnessclub🍀\n\n(Dacă nu mai doriți notificări, trimiteți STOP)`
   },
   {
     id: 'TPL-2',
     name: 'Schița 2: Reminder Prietenos / Nelimitat',
-    text: `Salutare {NUME}!\n\nAbonamentul tău la X-Fitness Club ({PLAN}) este valabil până pe data de {DATA_EXPIRARE}.\nTe așteptăm cu multă energie la antrenamente! 💪\n\nCu drag,\nEchipa X-Fitness Club 🍀`
+    text: `Salutare {NUME}!\n\nAbonamentul tău la X-Fitness Club ({PLAN}) este valabil până pe data de {DATA_EXPIRARE}.\nTe așteptăm cu multă energie la antrenamente! 💪\n\nCu drag,\nEchipa X-Fitness Club 🍀\n\n(Dacă nu mai doriți notificări, trimiteți STOP)`
   },
   {
     id: 'TPL-3',
     name: 'Schița 3: Abonament Expirat / Reînnoire',
-    text: `Bună ziua {NUME}!\n\nAbonamentul dvs ({PLAN}) a expirat. Vă așteptăm cu drag la recepție pentru reînnoire și continuarea antrenamentelor la X-Fitness Club! 🏋️‍♂️\n\nCu multă stimă,\nEchipa Xfitnessclub🍀`
+    text: `Bună ziua {NUME}!\n\nAbonamentul dvs ({PLAN}) a expirat. Vă așteptăm cu drag la recepție pentru reînnoire și continuarea antrenamentelor la X-Fitness Club! 🏋️‍♂️\n\nCu multă stimă,\nEchipa Xfitnessclub🍀\n\n(Dacă nu mai doriți notificări, trimiteți STOP)`
   }
 ];
 
@@ -2940,6 +2940,44 @@ window.sendNotifViaViber = function() {
   const cleanDigits = phone.replace(/[^0-9]/g, '');
   const viberUrl = `viber://chat?number=%2B${cleanDigits}`;
   window.location.href = viberUrl;
+};
+
+window.sendNotifViaWhatsApp = function() {
+  const client = getClients().find(c => c.id === currentNotificationClientId);
+  const elMsg = document.getElementById('notifModalMessageText');
+  const text = elMsg ? elMsg.value : (client ? generateClientReminderText(client) : '');
+  const rawPhone = client ? (client.phone || '') : '';
+  let cleanDigits = rawPhone.replace(/[^0-9]/g, '');
+
+  if (cleanDigits.startsWith('0') && cleanDigits.length === 9) {
+    cleanDigits = '373' + cleanDigits.substring(1);
+  } else if (!cleanDigits.startsWith('373') && cleanDigits.length === 8) {
+    cleanDigits = '373' + cleanDigits;
+  }
+
+  try {
+    navigator.clipboard.writeText(text);
+  } catch (e) {}
+
+  showToast('Deschidere WhatsApp...');
+  const waUrl = `https://wa.me/${cleanDigits}?text=${encodeURIComponent(text)}`;
+  window.open(waUrl, '_blank');
+};
+
+window.sendNotifViaSMS = function() {
+  const client = getClients().find(c => c.id === currentNotificationClientId);
+  const elMsg = document.getElementById('notifModalMessageText');
+  const text = elMsg ? elMsg.value : (client ? generateClientReminderText(client) : '');
+  const rawPhone = client ? (client.phone || '') : '';
+  let cleanDigits = rawPhone.replace(/[^0-9+]/g, '');
+
+  try {
+    navigator.clipboard.writeText(text);
+  } catch (e) {}
+
+  showToast('Deschidere SMS...');
+  const smsUrl = `sms:${cleanDigits}?body=${encodeURIComponent(text)}`;
+  window.location.href = smsUrl;
 };
 
 window.copyClientNotificationText = function(clientId) {

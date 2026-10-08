@@ -1452,6 +1452,34 @@ textarea.form-control {
   color: #FFFFFF;
 }
 
+.calc-recommendation-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  backdrop-filter: blur(8px);
+}
+
+.calc-rec-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #FFFFFF;
+  margin-bottom: 0.35rem;
+}
+
+.calc-rec-desc {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #A0AEC0;
+  margin: 0;
+}
+
 .section-reviews-video {
   position: relative;
   background-color: #0B0D10;
@@ -1735,6 +1763,17 @@ textarea.form-control {
 .form-checkbox-label a {
   color: var(--primary-red);
   text-decoration: underline;
+}
+
+.form-consent-notice {
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: #64748b;
+  margin-top: 0.45rem;
+  padding: 0.35rem 0.55rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-left: 2px solid rgba(229, 9, 20, 0.45);
+  border-radius: 0 4px 4px 0;
 }
 
 .footer {
@@ -2511,4 +2550,125 @@ textarea.form-control {
   .footer {
     padding: 2.75rem 0 1.5rem;
   }
+}
+
+/* Legal Modal Styling (Moldova Law Compliance) */
+.modal-card-legal {
+  max-width: 640px;
+  width: 95%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary-red);
+  background: rgba(229, 9, 20, 0.08);
+  border: 1px solid rgba(229, 9, 20, 0.2);
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.legal-scroll-area {
+  font-size: 0.84rem;
+  color: #334155;
+  line-height: 1.62;
+  overflow-y: auto;
+  padding-right: 0.6rem;
+  flex: 1;
+  margin-top: 0.5rem;
+}
+
+.legal-block {
+  margin-bottom: 1.15rem;
+}
+
+.legal-block h4 {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+.legal-block p {
+  margin-bottom: 0.4rem;
+}
+
+.legal-block ul {
+  padding-left: 1.25rem;
+  margin: 0.35rem 0;
+}
+
+.legal-block li {
+  margin-bottom: 0.3rem;
+}
+
+/* Cookie Consent Banner (Republic of Moldova Law 241/2007) */
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+  padding: 1rem 1.25rem;
+  transform: translateY(120%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cookie-banner.show {
+  transform: translateY(0);
+}
+
+.cookie-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.cookie-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cookie-text {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+  flex: 1;
+  min-width: 260px;
+  margin: 0;
+}
+
+.cookie-text a {
+  color: #FF3D49;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.cookie-actions {
+  flex-shrink: 0;
+}
+
+.cookie-actions .btn-sm {
+  padding: 0.45rem 1.15rem;
+  font-size: 0.8rem;
+  min-height: auto;
+  white-space: nowrap;
 }

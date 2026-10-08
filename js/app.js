@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initKBJUCalculator();
   initModals();
   initContactForms();
+  initLazyVideos();
+  initCookieBanner();
 });
 
 const DEFAULT_PRICING = {
@@ -334,6 +336,17 @@ function initKBJUCalculator() {
       if (barFat) barFat.style.width = `${Math.round((fatGrams / totalMacrosGrams) * 100)}%`;
       if (barCarbs) barCarbs.style.width = `${Math.round((carbsGrams / totalMacrosGrams) * 100)}%`;
     }
+
+    const recText = document.getElementById('calcRecText');
+    if (recText) {
+      if (goal === 'lose') {
+        recText.textContent = 'Pentru arderea eficientă a grăsimilor, menține un deficit moderat de calorii și combină alimentația cu minimum 3 antrenamente de forță pe săptămână.';
+      } else if (goal === 'gain') {
+        recText.textContent = 'Pentru creșterea masei musculare calitative, respectă aportul ridicat de proteine și antrenează-te progresiv cu greutăți libere în sală.';
+      } else {
+        recText.textContent = 'Pentru menținerea formei și tonusului muscular, păstrează acest echilibru caloric și vino cu regularitate la antrenamente.';
+      }
+    }
   };
 
   calcForm.addEventListener('input', calculate);
@@ -396,11 +409,30 @@ function initModals() {
 
   const privacyTriggers = document.querySelectorAll('[data-open-privacy]');
   const privacyModal = document.getElementById('privacyModal');
+  const termsTriggers = document.querySelectorAll('[data-open-terms]');
+  const termsModal = document.getElementById('termsModal');
+
   privacyTriggers.forEach(trigger => {
     trigger.addEventListener('click', (e) => {
       e.preventDefault();
+      if (termsModal && termsModal.classList.contains('active')) {
+        closeModal(termsModal);
+      }
       if (privacyModal) {
         privacyModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    });
+  });
+
+  termsTriggers.forEach(trigger => {
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (privacyModal && privacyModal.classList.contains('active')) {
+        closeModal(privacyModal);
+      }
+      if (termsModal) {
+        termsModal.classList.add('active');
         document.body.style.overflow = 'hidden';
       }
     });
@@ -530,7 +562,15 @@ function initContactForms() {
         return;
       }
 
-      // 4. Input Extraction & Strict Validation
+      // 4. Legal Consent Check (Legea RM nr. 133/2011)
+      const consentBox = form.querySelector('input[type="checkbox"]');
+      if (consentBox && !consentBox.checked) {
+        showToast('Vă rugăm să bifați acordul cu prelucrarea datelor cu caracter personal.', 'warning');
+        consentBox.focus();
+        return;
+      }
+
+      // 5. Input Extraction & Strict Validation
       let rawName = '';
       let rawPhone = '';
       let rawPlan = 'Antrenament de Probă';
@@ -668,6 +708,74 @@ function showToast(message, type = 'success') {
   setTimeout(() => {
     toast.classList.remove('show');
   }, 4500);
+}
+
+// -----------------------------------------------------------------------------
+// PERFORMANCE: LAZY LOAD HEAVY BACKGROUND VIDEOS ON VIEWPORT INTERSECTION
+// Saves ~4.5 MB on initial mobile load & drastically speeds up LCP and PageSpeed
+// -----------------------------------------------------------------------------
+function initLazyVideos() {
+  const lazyVideos = document.querySelectorAll('video.lazy-video');
+  if (!lazyVideos.length) return;
+
+  function loadAndPlayVideo(video) {
+    const sources = video.querySelectorAll('source[data-src]');
+    sources.forEach(s => {
+      const srcUrl = s.getAttribute('data-src');
+      if (srcUrl) {
+        s.src = srcUrl;
+        s.removeAttribute('data-src');
+      }
+    });
+    video.load();
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {});
+    }
+  }
+
+  if ('IntersectionObserver' in window) {
+    const videoObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          loadAndPlayVideo(entry.target);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '300px 0px' });
+
+    lazyVideos.forEach(v => videoObserver.observe(v));
+  } else {
+    // Fallback for older browsers
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        lazyVideos.forEach(v => loadAndPlayVideo(v));
+      }, 1500);
+    });
+  }
+}
+
+// -----------------------------------------------------------------------------
+// LEGAL COMPLIANCE: COOKIE & LOCAL STORAGE CONSENT BANNER (RM LAW 241/2007)
+// -----------------------------------------------------------------------------
+function initCookieBanner() {
+  const banner = document.getElementById('cookieBanner');
+  const acceptBtn = document.getElementById('acceptCookiesBtn');
+  if (!banner) return;
+
+  const hasConsent = localStorage.getItem('xf_cookie_consent');
+  if (!hasConsent) {
+    setTimeout(() => {
+      banner.classList.add('show');
+    }, 1200);
+  }
+
+  if (acceptBtn) {
+    acceptBtn.addEventListener('click', () => {
+      localStorage.setItem('xf_cookie_consent', 'accepted');
+      banner.classList.remove('show');
+    });
+  }
 }
 
 window.openBookingModal = openBookingModal;

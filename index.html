@@ -10,7 +10,7 @@
   <meta name="keywords" content="sala de fitness Bacioi, X-Fitness, X-Line, sala de forta, greutati libere, antrenament individual, abonamente fitness">
   <meta name="author" content="X-Fitness Club">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://x-fitness.md/">
+  <link rel="canonical" href="https://www.xfitnessclub.md/">
   <script>
     (function() {
       try {
@@ -24,22 +24,27 @@
   </script>
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://x-fitness.md/">
+  <meta property="og:url" content="https://www.xfitnessclub.md/">
   <meta property="og:title" content="X-Fitness Club — Sală de Forță în Băcioi">
   <meta property="og:description" content="Aparate de forță „X-Line”, greutăți libere, zonă cardio și antrenamente individuale în Băcioi, str. Independenței 58.">
-  <meta property="og:image" content="https://x-fitness.md/assets/logo.png">
+  <meta property="og:image" content="https://www.xfitnessclub.md/assets/logo.png">
   <meta property="og:site_name" content="X-Fitness Club">
   <meta property="og:locale" content="ro_MD">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="X-Fitness Club — Sală de Forță în Băcioi">
   <meta name="twitter:description" content="Sală de forță în Băcioi dotată cu aparate profesionale X-Line, zonă cardio și antrenamente individuale.">
-  <meta name="twitter:image" content="https://x-fitness.md/assets/logo.png">
+  <meta name="twitter:image" content="https://www.xfitnessclub.md/assets/logo.png">
 
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preload" as="image" href="assets/logo.red.webp" type="image/webp">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@800;900&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@800;900&family=Outfit:wght@800;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@800;900&family=Outfit:wght@800;900&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@800;900&family=Outfit:wght@800;900&display=swap">
+  </noscript>
 
   <link rel="stylesheet" href="css/styles.min.css">
 
@@ -47,10 +52,10 @@
   {
     "@context": "https://schema.org",
     "@type": "ExerciseGym",
-    "@id": "https://x-fitness.md/#gym",
+    "@id": "https://www.xfitnessclub.md/#gym",
     "name": "X-Fitness Club",
-    "image": "https://x-fitness.md/assets/logo.png",
-    "url": "https://x-fitness.md",
+    "image": "https://www.xfitnessclub.md/assets/logo.png",
+    "url": "https://www.xfitnessclub.md",
     "telephone": "+37369962996",
     "email": "xfitnessclubmd@gmail.com",
     "priceRange": "$",
@@ -683,6 +688,20 @@
                 <div>Metabolism Bazal (BMR): <strong id="resBmr">1,780 kcal</strong></div>
                 <div>Apă recomandată: <strong id="resWater">2.8 L/zi</strong></div>
               </div>
+
+              <div class="calc-recommendation-box">
+                <div class="calc-rec-header">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#FF3D49" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span>Recomandarea Antrenorului</span>
+                </div>
+                <p class="calc-rec-desc" id="calcRecText">
+                  Pentru arderea eficientă a grăsimilor, menține un deficit moderat de calorii și combină alimentația cu minimum 3 antrenamente de forță pe săptămână.
+                </p>
+              </div>
             </div>
 
             <button class="btn btn-primary btn-block" id="sendCalcResultsBtn">
@@ -700,9 +719,8 @@
     <section class="section-fullscreen section-reviews-video" id="recenzii">
       
       <div class="video-bg-container">
-        <video class="video-bg" autoplay loop muted playsinline preload="metadata">
-          <source src="assets/148200-793717932_tiny.webm" type="video/webm">
-          <source src="assets/148200-793717932_tiny.mp4" type="video/mp4">
+        <video class="video-bg lazy-video" loop muted playsinline preload="none" aria-hidden="true">
+          <source data-src="assets/148200-793717932_tiny.webm" type="video/webm">
         </video>
         <div class="video-bg-overlay"></div>
       </div>
@@ -922,9 +940,13 @@
               </button>
 
               <label class="form-checkbox-label">
-                <input type="checkbox" required checked>
-                <span>Sunt de acord cu prelucrarea datelor mele conform <a href="#" data-open-privacy>Politicii de Confidențialitate</a>.</span>
+                <input type="checkbox" id="mainConsentCheck" required>
+                <span>Sunt de acord cu prelucrarea datelor mele cu caracter personal conform <a href="#" data-open-privacy>Politicii de Confidențialitate</a> și <a href="#" data-open-terms>Termenilor și Condițiilor</a>.</span>
               </label>
+
+              <p class="form-consent-notice">
+                * Prin trimiterea formularului, confirmați acordul de a fi contactat(ă) și de a primi notificări privind starea solicitării sau abonamentului dumneavoastră (confirmări, modificări de orar, memento expirare și vizite) prin apel telefonic, SMS, WhatsApp sau Viber. Vă puteți dezabona oricând printr-un simplu mesaj de refuz.
+              </p>
             </form>
           </div>
         </div>
@@ -935,9 +957,8 @@
   <footer class="footer">
     
     <div class="footer-video-bg-container">
-      <video class="footer-video-bg" autoplay loop muted playsinline preload="metadata">
-        <source src="assets/148209-793717950_tiny.webm" type="video/webm">
-        <source src="assets/148209-793717950_tiny.mp4" type="video/mp4">
+      <video class="footer-video-bg lazy-video" loop muted playsinline preload="none" aria-hidden="true">
+        <source data-src="assets/148209-793717950_tiny.webm" type="video/webm">
       </video>
       <div class="footer-video-overlay"></div>
     </div>
@@ -1003,13 +1024,14 @@
           &copy; 2026 X-Fitness Club. Toate drepturile rezervate.
         </div>
         <div class="footer-legal-links">
-          <a href="#" data-open-privacy>Politica de Confidențialitate</a>
-          <a href="#" data-open-privacy>Termeni și Condiții</a>
+          <a href="#" data-open-privacy>Politica de Confidențialitate (Legea 133/2011)</a>
+          <a href="#" data-open-terms>Termeni și Condiții</a>
         </div>
       </div>
     </div>
   </footer>
 
+  <!-- Modal 1: Înscriere la Antrenament -->
   <div class="modal-backdrop" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="modalBookingTitle">
     <div class="modal-card">
       <button class="modal-close-btn" data-close-modal aria-label="Închide fereastra">
@@ -1052,42 +1074,207 @@
         </button>
 
         <label class="form-checkbox-label">
-          <input type="checkbox" required checked>
-          <span>Sunt de acord cu prelucrarea datelor cu caracter personal.</span>
+          <input type="checkbox" id="bookConsentCheck" required>
+          <span>Sunt de acord cu prelucrarea datelor mele cu caracter personal conform <a href="#" data-open-privacy>Politicii de Confidențialitate</a> și <a href="#" data-open-terms>Termenilor și Condițiilor</a>.</span>
         </label>
+
+        <p class="form-consent-notice">
+          * Prin trimiterea formularului, confirmați acordul de a fi contactat(ă) și de a primi notificări privind programarea sau abonamentul (confirmări, modificări de orar, memento expirare și evidența vizitelor) prin apel telefonic, SMS, WhatsApp sau Viber. Vă puteți dezabona oricând printr-un simplu mesaj de refuz.
+        </p>
       </form>
     </div>
   </div>
 
+  <!-- Modal 2: Politica de Confidențialitate (Legea RM nr. 133/2011) -->
   <div class="modal-backdrop" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle">
-    <div class="modal-card">
+    <div class="modal-card modal-card-legal">
       <button class="modal-close-btn" data-close-modal aria-label="Închide fereastra">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
 
       <div class="modal-header">
+        <div class="legal-badge">Conform Legii RM nr. 133/2011 & Legii nr. 284/2004</div>
         <h3 class="modal-title" id="privacyModalTitle">Politica de Confidențialitate</h3>
-        <p class="modal-subtitle">X-Fitness Club — Băcioi, str. Independenței 58</p>
+        <p class="modal-subtitle">X-Fitness Club — Băcioi, str. Independenței 58, mun. Chișinău</p>
       </div>
 
-      <div style="font-size: 0.88rem; color: #495057; line-height: 1.6; max-height: 50vh; overflow-y: auto; padding-right: 0.5rem;">
-        <p><strong>1. Principii Generale</strong><br>X-Fitness Club respectă confidențialitatea fiecărui utilizator și se angajează să protejeze datele cu caracter personal colectate prin intermediul acestui site web.</p>
-        <br>
-        <p><strong>2. Date Colectate</strong><br>Colectăm doar informațiile necesare pentru procesarea solicitărilor tale: nume, prenume și număr de telefon.</p>
-        <br>
-        <p><strong>3. Scopul Prelucrării</strong><br>Datele sunt utilizate exclusiv pentru confirmarea înscrierilor la sală și comunicarea legată de abonamente.</p>
-        <br>
-        <p><strong>4. Securitatea Datelor</strong><br>Datele tale nu sunt transmise către terți în scopuri publicitare.</p>
+      <div class="legal-scroll-area">
+        <div class="legal-block">
+          <h4>1. Operatorul Datelor cu Caracter Personal</h4>
+          <p>Operatorul datelor colectate prin intermediul acestui site este Clubul Sportiv / Sala de Forță <strong>„X-Fitness Club”</strong>, cu sediul în Republica Moldova, mun. Chișinău, com. Băcioi, str. Independenței 58. Date de contact: telefon: <a href="tel:+37369962996" style="color:var(--primary-red); font-weight:700;">+373 69 962 996</a>, email: <a href="mailto:xfitnessclubmd@gmail.com" style="color:var(--primary-red); font-weight:700;">xfitnessclubmd@gmail.com</a>, website: <strong>https://www.xfitnessclub.md</strong>.</p>
+        </div>
+
+        <div class="legal-block">
+          <h4>2. Cadrul Legal Aplicabil în Republica Moldova</h4>
+          <p>Prelucrarea datelor cu caracter personal este efectuată în strictă concordanță cu legislația Republicii Moldova, în special:</p>
+          <ul>
+            <li><strong>Legea nr. 133 din 08.07.2011</strong> privind protecția datelor cu caracter personal;</li>
+            <li><strong>Legea nr. 284 din 22.07.2004</strong> privind comerțul electronic;</li>
+            <li><strong>Legea nr. 241 din 15.11.2007</strong> privind comunicațiile electronice;</li>
+            <li><strong>Legea nr. 105 din 13.03.2003</strong> privind protecția consumatorilor.</li>
+          </ul>
+        </div>
+
+        <div class="legal-block">
+          <h4>3. Categoriile de Date Colectate</h4>
+          <p>Prin intermediul formularelor electronice de pe site colectăm următoarele date transmise benevol de dumneavoastră:</p>
+          <ul>
+            <li><strong>Nume și prenume</strong> — pentru identificarea solicitantului și emiterea abonamentului;</li>
+            <li><strong>Număr de telefon mobil</strong> — pentru contactare, confirmarea vizitei și transmiterea notificărilor de serviciu;</li>
+            <li><strong>Tipul de abonament/serviciu dorit</strong> și <strong>intervalul orar preferat</strong>;</li>
+            <li><strong>Mesajul sau mențiunile specifice</strong> completate opțional.</li>
+          </ul>
+        </div>
+
+        <div class="legal-block">
+          <h4>4. Temeiurile Juridice și Scopurile Prelucrării</h4>
+          <p>Datele sunt prelucrate pe baza <em>art. 5 alin. (1)</em> (consimțământul liber exprimat) și <em>art. 5 alin. (5) lit. a)</em> (demersuri precontractuale la solicitarea persoanei) din Legea nr. 133/2011, în următoarele scopuri exclusive:</p>
+          <ul>
+            <li>Înregistrarea cererii de înscriere și stabilirea programării pentru antrenament;</li>
+            <li>Crearea, evidența și administrarea abonamentului de fitness;</li>
+            <li>Transmiterea notificărilor operaționale (confirmarea înscrierii, atenționare privind vizitele rămase, notificare înainte de data expirării abonamentului);</li>
+            <li>Răspunsul la întrebările și cererile de asistență ale utilizatorilor.</li>
+          </ul>
+        </div>
+
+        <div class="legal-block">
+          <h4>5. Regimul Notificărilor prin Mesagerie (Viber, WhatsApp, SMS, Apel)</h4>
+          <p>Prin completarea formularului de înregistrare sau crearea unui abonament, vă exprimați acordul expres de a primi notificări legate direct de relația dumneavoastră cu X-Fitness Club prin canale electronice:</p>
+          <ul>
+            <li><strong>Mesaje Viber sau WhatsApp:</strong> mesaje de confirmare, atenționare privind apropierea termenului de expirare a abonamentului și numărul de vizite rămase;</li>
+            <li><strong>SMS și apeluri telefonice:</strong> pentru confirmarea rapidă a programărilor solicitate.</li>
+          </ul>
+          <p><strong>Dreptul necondiționat de renunțare (Dezabonare):</strong> Mesajele nu constituie publicitate nesolicitată (spam). Aveți dreptul garantat de a renunța în orice moment, fără niciun cost, la primirea notificărilor informative prin transmiterea unui simplu mesaj cu textul <em>„STOP”</em> pe canalul primit sau prin comunicare directă la recepție / email.</p>
+        </div>
+
+        <div class="legal-block">
+          <h4>6. Confidențialitatea și Destinatarii Datelor</h4>
+          <p>Datele cu caracter personal sunt confidențiale și sunt accesibile doar personalului autorizat al sălii. <strong>X-Fitness Club NU vinde, NU închiriază și NU înstrăinează</strong> datele dumneavoastră către companii terțe în scopuri de marketing comercial străin. Serviciile tehnice de mesagerie (Meta / WhatsApp, Rakuten Viber, operatori telecom) acționează strict ca furnizori tehnici de transmitere a mesajelor securizate.</p>
+        </div>
+
+        <div class="legal-block">
+          <h4>7. Perioada de Păstrare a Datelor</h4>
+          <p>Datele sunt păstrate pe durata activă a abonamentului și a relației contractuale cu clubul, plus perioada necesară îndeplinirii obligațiilor legale și fiscale conform legislației Republicii Moldova, sau până la retragerea consimțământului / solicitarea de ștergere formulată de dumneavoastră.</p>
+        </div>
+
+        <div class="legal-block">
+          <h4>8. Drepturile Subiectului Datelor (Art. 12-17 din Legea nr. 133/2011)</h4>
+          <p>Conform legislației Republicii Moldova, beneficiați de următoarele drepturi:</p>
+          <ul>
+            <li><strong>Dreptul de a fi informat</strong> cu privire la identitatea operatorului și scopurile prelucrării (Art. 12);</li>
+            <li><strong>Dreptul de acces</strong> la datele personale prelucrate (Art. 13);</li>
+            <li><strong>Dreptul de intervenție/rectificare</strong> a datelor inexacte sau incomplete (Art. 14);</li>
+            <li><strong>Dreptul de opoziție și ștergere</strong> a datelor („dreptul de a fi uitat”) (Art. 15);</li>
+            <li><strong>Dreptul de a nu fi supus unei decizii individuale automatizate</strong> (Art. 16);</li>
+            <li><strong>Dreptul de a depune o plângere:</strong> În cazul în care considerați că drepturile v-au fost încălcate, aveți dreptul legal de a vă adresa <strong>Centrului Național pentru Protecția Datelor cu Caracter Personal al Republicii Moldova (CNPDCP)</strong>, mun. Chișinău, str. Serghei Lazo 48, site: <em>www.datepersonale.md</em>, sau instanțelor de judecată competente.</li>
+          </ul>
+        </div>
       </div>
 
-      <button class="btn btn-outline btn-block" data-close-modal style="margin-top: 1.25rem;">
-        Am înțeles și închid
-      </button>
+      <div style="display:flex; gap:0.75rem; margin-top:1.25rem;">
+        <button class="btn btn-outline btn-block" data-open-terms style="flex:1;">
+          Vezi Termeni și Condiții
+        </button>
+        <button class="btn btn-primary btn-block" data-close-modal style="flex:1;">
+          Am Înțeles și Închid
+        </button>
+      </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.min.js"></script>
-  <script src="js/app.min.js"></script>
+  <!-- Modal 3: Termeni și Condiții & Regulamentul Clubului -->
+  <div class="modal-backdrop" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="termsModalTitle">
+    <div class="modal-card modal-card-legal">
+      <button class="modal-close-btn" data-close-modal aria-label="Închide fereastra">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <div class="modal-header">
+        <div class="legal-badge">Regulament Oficial X-Fitness Club</div>
+        <h3 class="modal-title" id="termsModalTitle">Termeni și Condiții de Servicii</h3>
+        <p class="modal-subtitle">Băcioi, str. Independenței 58 · Legea RM nr. 105/2003 privind protecția consumatorilor</p>
+      </div>
+
+      <div class="legal-scroll-area">
+        <div class="legal-block">
+          <h4>1. Dispoziții Generale</h4>
+          <p>Prezentul regulament guvernează termenii de acces și utilizare a facilităților clubului sportiv <strong>X-Fitness Club</strong>, situat în Republica Moldova, com. Băcioi, str. Independenței 58, precum și utilizarea platformei web oficiale <strong>https://www.xfitnessclub.md</strong>.</p>
+        </div>
+
+        <div class="legal-block">
+          <h4>2. Reguli de Acces și Conduită în Sală</h4>
+          <ul>
+            <li><strong>Încălțăminte curată de schimb:</strong> Accesul pe suprafața de antrenament este permis strict în încălțăminte sportivă curată dedicată sălii și echipament sportiv adecvat.</li>
+            <li><strong>Igienă și prosop:</strong> Este obligatorie utilizarea unui prosop personal la utilizarea aparatelor și băncuțelor de forță.</li>
+            <li><strong>Ordine și siguranță:</strong> Fiecare membru este dator să descarce și să așeze discurile, ganterele și accesoriile pe suporturile destinate după finalizarea fiecărui exercițiu.</li>
+            <li>Se interzice accesul persoanelor în stare de ebrietate sau cu substanțe interzise.</li>
+          </ul>
+        </div>
+
+        <div class="legal-block">
+          <h4>3. Abonamente, Tarife și Valabilitate</h4>
+          <ul>
+            <li>Tarifele abonamentelor sunt exprimate în <strong>Lei Moldovenești (MDL)</strong> și includ accesul la facilitățile specificate conform fiecărui pachet.</li>
+            <li>Abonamentele lunare (Nelimitat 1 Lună) au o valabilitate de <strong>30 de zile calendaristice</strong> începând cu data activării.</li>
+            <li>Abonamentele pe bază de număr fix de vizite (8 sau 12 vizite) au valabilitate de 30 de zile de la emitere. Vizitele neefectuate în termenul de valabilitate nu se reportează automat.</li>
+            <li>Abonamentele sunt nominale și netransmisibile fără aprobarea scrisă a administrației clubului.</li>
+          </ul>
+        </div>
+
+        <div class="legal-block">
+          <h4>4. Rezervări, Anulări și Protecția Consumatorului (Legea nr. 105/2003)</h4>
+          <p>În conformitate cu Legea Republicii Moldova nr. 105/2003 privind protecția consumatorilor:</p>
+          <ul>
+            <li>Programările pentru antrenamente individuale cu antrenor se fac în prealabil. Anularea sau reprogramarea unei ședințe trebuie anunțată cu minimum 4 ore înainte.</li>
+            <li>În caz de incapacitate medicală demonstrată prin document medical eliberat de o instituție autorizată, abonamentul poate fi suspendat temporar conform deciziei administrației.</li>
+          </ul>
+        </div>
+
+        <div class="legal-block">
+          <h4>5. Răspundere și Siguranță Fizică</h4>
+          <p>Fiecare membru declară pe proprie răspundere că starea sa fizică și de sănătate este corespunzătoare pentru practicarea exercițiilor de fitness și culturism. În vestiare sunt puse la dispoziție dulăpioare individuale; administrația recomandă să nu lăsați bunuri de mare valoare nesupravegheate și nu poartă răspundere civilă pentru obiectele lăsate nesupravegheate în afara zonelor securizate.</p>
+        </div>
+
+        <div class="legal-block">
+          <h4>6. Soluționarea Litigiilor și Legislație</h4>
+          <p>Orice dispută apărută între club și membru se va rezolva prioritar pe cale amiabilă. În caz de nesoluționare, litigiul va fi deferit instanțelor de judecată competente din municipiul Chișinău, în conformitate cu legislația Republicii Moldova.</p>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:0.75rem; margin-top:1.25rem;">
+        <button class="btn btn-outline btn-block" data-open-privacy style="flex:1;">
+          Vezi Politica de Date (Legea 133)
+        </button>
+        <button class="btn btn-primary btn-block" data-close-modal style="flex:1;">
+          Am Înțeles și Închid
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cookie Consent Banner (Legea RM nr. 241/2007) -->
+  <div class="cookie-banner" id="cookieBanner" role="region" aria-label="Notificare Cookie">
+    <div class="cookie-content">
+      <div class="cookie-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FF3D49" stroke-width="2">
+          <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5z"></path>
+          <path d="M8.5 8.5v.01"></path>
+          <path d="M7 15v.01"></path>
+          <path d="M11 17v.01"></path>
+          <path d="M15 13v.01"></path>
+        </svg>
+      </div>
+      <p class="cookie-text">
+        Utilizăm module cookie esențiale și stocare locală pentru asigurarea funcționalității și securității platformei, conform legislației Republicii Moldova (Legea nr. 133/2011 și Legea nr. 241/2007). Continuând navigarea, ești de acord conform <a href="#" data-open-privacy>Politicii de Confidențialitate</a>.
+      </p>
+      <div class="cookie-actions">
+        <button type="button" class="btn btn-primary btn-sm" id="acceptCookiesBtn">Am înțeles și Accept</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/supabase-client.min.js" defer></script>
+  <script src="js/app.min.js" defer></script>
 </body>
 </html>

@@ -26,7 +26,7 @@
       <form class="auth-form" id="authForm">
         <div class="auth-form-group">
           <label class="auth-label" for="authUsername">Email Administrator / Utilizator</label>
-          <input type="text" id="authUsername" class="auth-input" placeholder="admin@x-fitness.md sau xclub" required autofocus autocomplete="username">
+          <input type="text" id="authUsername" class="auth-input" placeholder="admin@xfitnessclub.md sau xclub" required autofocus autocomplete="username">
         </div>
 
         <div class="auth-form-group">
@@ -1225,7 +1225,19 @@
             <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
               <path d="M20.4 4.6C18.6 2.8 15.8 2 12.3 2 7.7 2 3.8 3.5 2.6 7.4c-.8 2.8-.2 5.5 1.5 7.6l-.8 3.1c-.2.8.5 1.5 1.3 1.3l3.2-.8c1.4.7 3 1.1 4.5 1.1 4.6 0 8.5-1.5 9.7-5.4 1.2-3.9.3-7.8-1.6-9.7zm-2.8 9.9c-.3.9-1.5 1.6-2.5 1.6-1.1 0-2.8-.8-4.7-2.7-1.9-1.9-2.7-3.6-2.7-4.7 0-1 .7-2.2 1.6-2.5.4-.1.8 0 1 .3l1.1 1.7c.2.4.2.8 0 1.1l-.5.7c-.2.2-.2.5 0 .7.6 1 1.4 1.8 2.4 2.4.2.2.5.2.7 0l.7-.5c.3-.2.7-.2 1.1 0l1.7 1.1c.3.3.4.7.2 1.1z"/>
             </svg>
-            Deschide Viber
+            Viber
+          </button>
+          <button type="button" class="crm-btn" onclick="sendNotifViaWhatsApp()" style="background:#22c55e; color:#fff; border:1px solid #16a34a;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.41a8.19 8.19 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.25-4.36c0-4.54 3.7-8.24 8.24-8.24z"/>
+            </svg>
+            WhatsApp
+          </button>
+          <button type="button" class="crm-btn" onclick="sendNotifViaSMS()" style="background:#0284c7; color:#fff; border:1px solid #0369a1;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            SMS
           </button>
         </div>
       </div>
