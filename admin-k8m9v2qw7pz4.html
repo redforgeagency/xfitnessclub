@@ -692,16 +692,24 @@
             </div>
 
             <h3 style="font-size:1.05rem; font-weight:900; text-transform:uppercase; margin-bottom:1rem; color:var(--crm-text-main); border-bottom:1px solid var(--crm-border); padding-bottom:0.5rem;">
-              Antrenamente Individuale cu Antrenor
+              Antrenamente Personale cu Antrenor
             </h3>
-            <div class="crm-form-row" style="margin-bottom:1.5rem;">
+            <div class="crm-form-row" style="margin-bottom:1.5rem; display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:1rem;">
               <div class="crm-form-group">
-                <label class="crm-form-label">1 Persoană (Lei / ședință)</label>
-                <input type="number" id="priceSetPT1" class="crm-form-input" min="1" required>
+                <label class="crm-form-label">Femei (Lei / ședință)</label>
+                <input type="number" id="priceSetPTWomen" class="crm-form-input" min="1" required>
               </div>
               <div class="crm-form-group">
-                <label class="crm-form-label">2+ Persoane (Lei / persoană)</label>
+                <label class="crm-form-label">Bărbați (Lei / ședință)</label>
+                <input type="number" id="priceSetPTMen" class="crm-form-input" min="1" required>
+              </div>
+              <div class="crm-form-group">
+                <label class="crm-form-label">2 Persoane (Lei / persoană)</label>
                 <input type="number" id="priceSetPT2" class="crm-form-input" min="1" required>
+              </div>
+              <div class="crm-form-group">
+                <label class="crm-form-label">3 Persoane (Lei / persoană)</label>
+                <input type="number" id="priceSetPT3" class="crm-form-input" min="1" required>
               </div>
             </div>
 
@@ -806,7 +814,11 @@
               <option value="Nelimitat 3 Luni">Nelimitat 3 Luni (1450 Lei)</option>
               <option value="Nelimitat 6 Luni">Nelimitat 6 Luni (2500 Lei)</option>
               <option value="Nelimitat 12 Luni">Nelimitat 12 Luni (4800 Lei)</option>
-              <option value="Antrenament Individual">Antrenament Individual (1600 Lei)</option>
+              <option value="Antrenament Personal (Femei)">Antrenament Personal — Femei (300 Lei / șed.)</option>
+              <option value="Antrenament Personal (Bărbați)">Antrenament Personal — Bărbați (350 Lei / șed.)</option>
+              <option value="Antrenament 2 Persoane">Antrenament 2 Persoane (200 Lei / pers)</option>
+              <option value="Antrenament 3 Persoane">Antrenament 3 Persoane (150 Lei / pers)</option>
+              <option value="Antrenament Individual">Antrenament Individual</option>
             </select>
           </div>
 
@@ -1030,6 +1042,10 @@
                   <option value="Nelimitat 3 Luni">Nelimitat 3 Luni</option>
                   <option value="Nelimitat 6 Luni">Nelimitat 6 Luni</option>
                   <option value="Nelimitat 12 Luni">Nelimitat 12 Luni</option>
+                  <option value="Antrenament Personal (Femei)">Antrenament Personal (Femei)</option>
+                  <option value="Antrenament Personal (Bărbați)">Antrenament Personal (Bărbați)</option>
+                  <option value="Antrenament 2 Persoane">Antrenament 2 Persoane</option>
+                  <option value="Antrenament 3 Persoane">Antrenament 3 Persoane</option>
                   <option value="Antrenament Individual">Antrenament Individual</option>
                 </select>
               </div>

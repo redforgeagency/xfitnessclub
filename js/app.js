@@ -44,25 +44,54 @@ const DEFAULT_PRICING = {
   unlimited3: 1450,
   unlimited6: 2500,
   unlimited12: 4800,
-  pt1: 200,
-  pt2: 150
+  pt_women: 300,
+  pt_men: 350,
+  pt1: 350,
+  pt2: 200,
+  pt3: 150
 };
 
 function initDynamicPricing() {
-  let pricing = DEFAULT_PRICING;
+  let pricing = { ...DEFAULT_PRICING };
   try {
     const saved = JSON.parse(localStorage.getItem('xfitness_pricing_config'));
-    if (saved) pricing = { ...DEFAULT_PRICING, ...saved };
+    if (saved) {
+      if (!saved.pt_women || !saved.pt_men || saved.pt2 === 150) {
+        delete saved.pt1;
+        delete saved.pt2;
+        delete saved.pt3;
+      }
+      pricing = { ...DEFAULT_PRICING, ...saved };
+    }
   } catch (err) {
     console.error('Error loading dynamic pricing:', err);
   }
 
-  document.querySelectorAll('[data-price-key]').forEach(el => {
-    const key = el.getAttribute('data-price-key');
-    if (pricing[key] !== undefined) {
-      el.textContent = Number(pricing[key]).toLocaleString('ro-RO');
-    }
-  });
+  const applyPrices = (cfg) => {
+    document.querySelectorAll('[data-price-key]').forEach(el => {
+      const key = el.getAttribute('data-price-key');
+      if (cfg[key] !== undefined) {
+        el.textContent = Number(cfg[key]).toLocaleString('ro-RO');
+      }
+    });
+  };
+
+  applyPrices(pricing);
+
+  if (window.dbClient?.getPricing) {
+    window.dbClient.getPricing().then(remotePricing => {
+      if (remotePricing && Object.keys(remotePricing).length) {
+        if (!remotePricing.pt_women || !remotePricing.pt_men || remotePricing.pt2 === 150) {
+          delete remotePricing.pt1;
+          delete remotePricing.pt2;
+          delete remotePricing.pt3;
+        }
+        pricing = { ...DEFAULT_PRICING, ...remotePricing };
+        localStorage.setItem('xfitness_pricing_config', JSON.stringify(pricing));
+        applyPrices(pricing);
+      }
+    }).catch(() => {});
+  }
 }
 
 function initHeader() {

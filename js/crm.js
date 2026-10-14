@@ -273,7 +273,13 @@ async function syncFromSupabase() {
     }
 
     if (pricing && Object.keys(pricing).length) {
-      localStorage.setItem('xfitness_pricing_config', JSON.stringify(pricing));
+      if (!pricing.pt_women || !pricing.pt_men || pricing.pt2 === 150) {
+        delete pricing.pt1;
+        delete pricing.pt2;
+        delete pricing.pt3;
+      }
+      const mergedPricing = { ...DEFAULT_PRICES, ...pricing };
+      localStorage.setItem('xfitness_pricing_config', JSON.stringify(mergedPricing));
     }
 
     populateCategorySelects();
@@ -1981,7 +1987,11 @@ function initEventListeners() {
       else if (p === 'Nelimitat 3 Luni') priceInput.value = prices.unlimited3;
       else if (p === 'Nelimitat 6 Luni') priceInput.value = prices.unlimited6;
       else if (p === 'Nelimitat 12 Luni') priceInput.value = prices.unlimited12;
-      else if (p === 'Antrenament Individual') priceInput.value = prices.pt1 * 8;
+      else if (p.includes('Femei')) priceInput.value = prices.pt_women;
+      else if (p.includes('Bărbați')) priceInput.value = prices.pt_men;
+      else if (p.includes('2 Persoane')) priceInput.value = prices.pt2;
+      else if (p.includes('3 Persoane')) priceInput.value = prices.pt3;
+      else if (p === 'Antrenament Individual') priceInput.value = prices.pt_men;
 
       updateVisitsBalanceInputs();
       updateAutoExpiryDate();
@@ -3118,14 +3128,24 @@ const DEFAULT_PRICES = {
   unlimited3: 1450,
   unlimited6: 2500,
   unlimited12: 4800,
-  pt1: 200,
-  pt2: 150
+  pt_women: 300,
+  pt_men: 350,
+  pt1: 350,
+  pt2: 200,
+  pt3: 150
 };
 
 function getPricingConfig() {
   try {
     const saved = JSON.parse(localStorage.getItem('xfitness_pricing_config'));
-    if (saved) return { ...DEFAULT_PRICES, ...saved };
+    if (saved) {
+      if (!saved.pt_women || !saved.pt_men || saved.pt2 === 150) {
+        delete saved.pt1;
+        delete saved.pt2;
+        delete saved.pt3;
+      }
+      return { ...DEFAULT_PRICES, ...saved };
+    }
   } catch {}
   return DEFAULT_PRICES;
 }
@@ -3145,8 +3165,10 @@ function initPricingSettings() {
   setVal('priceSetUnlimited3', prices.unlimited3);
   setVal('priceSetUnlimited6', prices.unlimited6);
   setVal('priceSetUnlimited12', prices.unlimited12);
-  setVal('priceSetPT1', prices.pt1);
+  setVal('priceSetPTWomen', prices.pt_women);
+  setVal('priceSetPTMen', prices.pt_men);
   setVal('priceSetPT2', prices.pt2);
+  setVal('priceSetPT3', prices.pt3);
 
   const form = document.getElementById('pricingSettingsForm');
   if (form) {
@@ -3161,8 +3183,11 @@ function initPricingSettings() {
         unlimited3: parseFloat(document.getElementById('priceSetUnlimited3')?.value) || 1450,
         unlimited6: parseFloat(document.getElementById('priceSetUnlimited6')?.value) || 2500,
         unlimited12: parseFloat(document.getElementById('priceSetUnlimited12')?.value) || 4800,
-        pt1: parseFloat(document.getElementById('priceSetPT1')?.value) || 200,
-        pt2: parseFloat(document.getElementById('priceSetPT2')?.value) || 150
+        pt_women: parseFloat(document.getElementById('priceSetPTWomen')?.value) || 300,
+        pt_men: parseFloat(document.getElementById('priceSetPTMen')?.value) || 350,
+        pt1: parseFloat(document.getElementById('priceSetPTMen')?.value) || 350,
+        pt2: parseFloat(document.getElementById('priceSetPT2')?.value) || 200,
+        pt3: parseFloat(document.getElementById('priceSetPT3')?.value) || 150
       };
 
       localStorage.setItem('xfitness_pricing_config', JSON.stringify(newPrices));

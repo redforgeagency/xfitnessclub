@@ -98,9 +98,12 @@ INSERT INTO public.pricing_config (key, price) VALUES
     ('unlimited3', 1450),
     ('unlimited6', 2500),
     ('unlimited12', 4800),
-    ('pt1', 200),
-    ('pt2', 150)
-ON CONFLICT (key) DO NOTHING;
+    ('pt_women', 300),
+    ('pt_men', 350),
+    ('pt1', 350),
+    ('pt2', 200),
+    ('pt3', 150)
+ON CONFLICT (key) DO UPDATE SET price = EXCLUDED.price;
 
 -- Insert Default Categories
 INSERT INTO public.custom_categories (name) VALUES
